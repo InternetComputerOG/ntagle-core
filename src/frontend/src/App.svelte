@@ -1,25 +1,29 @@
 <script>
   import Auth from "./components/Auth.svelte";
-  import { auth } from "./store/auth";
+  import { auth, adminStatus, tag } from "./store/auth";
   import CanisterIds from "./components/CanisterIds.svelte";
   import CMAC from "./components/CMAC.svelte";
   import Encode from "./components/Encode.svelte";
   import Form from "./components/Form.svelte";
   import Links from "./components/Links.svelte";
+  import Tag from "./components/Tag.svelte";
 </script>
 
 <main>
-  <a
+  <!-- <a
     href="https://dfinity.org"
     target="_blank"
     rel="noopener noreferrer"
     class="logo"
   >
     <img src="images/dfinity.svg" alt="DFINITY logo" />
-  </a>
-  <h1>Svelte Starter dApp</h1>
+  </a> -->
+  <h1>ntagle (Demo)</h1>
   <Auth />
-  {#if $auth.loggedIn && $auth.admin}
+  {#if $tag.valid}
+    <Tag />
+  {/if}
+  {#if $auth.loggedIn && $adminStatus}
     <Form />
     <Links />
     <CMAC />
@@ -29,14 +33,14 @@
 </main>
 
 <style>
-  img {
+  /* img {
     height: 22px;
   }
   .logo {
     display: inline-block;
     margin-bottom: 64px;
     margin-top: 24px;
-  }
+  } */
 
   main {
     text-align: center;

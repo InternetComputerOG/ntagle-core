@@ -4,24 +4,25 @@
   import { encode, decode } from "@stablelib/hex";
 
   var mKey = "00000000000000000000000000000000";
-  var uid = "04738712647380";
+  var uid = "047F2152E11190";
 
   const counts = [
-    '100000',
-    '200000',
-    '300000',
-    '400000',
-    '500000',
-    '600000',
-    '700000',
-    '800000',
-    '900000',
-    'A00000',
-    'B00000',
-    'C00000',
-    'D00000',
-    'E00000',
-    'F00000',
+    '000000',
+    '010000',
+    '020000',
+    '030000',
+    '040000',
+    '050000',
+    '060000',
+    '070000',
+    '080000',
+    '090000',
+    '0A0000',
+    '0B0000',
+    '0C0000',
+    '0D0000',
+    '0E0000',
+    '0F0000',
     '100000',
     '110000',
     '120000',
@@ -526,13 +527,27 @@
     let s2 = fullString.slice(6,8);
     let s3 = fullString.slice(10,12);
     let s4 = fullString.slice(14,16);
+    let s5 = fullString.slice(18,20);
+    let s6 = fullString.slice(22,24);
+    let s7 = fullString.slice(26,28);
+    let s8 = fullString.slice(30,32);
 
-    return (s1 + s2 + s3 + s4).toUpperCase();
+    return (s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8).toUpperCase();
   };
 </script>
 
 <input bind:value={uid}>
 <input bind:value={mKey}>
-{#each counts as count}
-  {SDMMAC(count, uid, mKey)}, 
-{/each}
+<h6>copy this</h6>
+<div class="CMAC-box">
+  {#each counts as count}
+    {SDMMAC(count, uid, mKey)},
+  {/each}
+</div>
+
+<style>
+  .CMAC-box {
+    inline-size: 800px;
+    overflow-wrap: break-word;
+  }
+</style>

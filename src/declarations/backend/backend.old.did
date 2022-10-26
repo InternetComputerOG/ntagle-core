@@ -1,13 +1,51 @@
+type TagUid = nat64;
 type TagParam = 
  record {
    cmac: blob;
    ctr: blob;
    uid: blob;
  };
+type TagEncodeResult = 
+ record {
+   key: AESKey;
+   transfer_code: AESKey;
+ };
+type TagCtr = nat32;
+type ScanResult = 
+ variant {
+   Err: ScanError;
+   Ok: ScanResponse;
+ };
+type ScanResponse = 
+ record {
+   locked: bool;
+   owner: bool;
+   transfer_code: opt AESKey;
+   wallet: blob;
+ };
+type ScanError = record {msg: text;};
+type Scan = 
+ record {
+   cmac: CMAC;
+   ctr: TagCtr;
+   transfer_code: AESKey;
+   uid: TagUid;
+ };
+type Hex = text;
+type CMAC = text;
+type AESKey = text;
 service : {
   decrypt: (TagParam) -> (vec nat8) query;
   encrypt: (TagParam) -> (blob) query;
+  getRegistry: () -> (vec record {
+                            TagUid;
+                            principal;
+                          }) query;
+  importScans: (TagUid, vec Hex) -> () oneway;
+  isAdmin: () -> (bool);
   reflect: (TagParam) -> (TagParam) query;
+  registerTag: (TagUid) -> (TagEncodeResult);
+  scan: (Scan) -> (ScanResult);
   show_key: () -> (vec nat8) query;
   text_to_array: (TagParam) -> (vec nat8) query;
   whoami: () -> (principal) query;

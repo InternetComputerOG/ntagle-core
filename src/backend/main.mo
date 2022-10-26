@@ -1,8 +1,10 @@
 import Array        "mo:base/Array";
+import Bool         "mo:base/Bool";
 import Blob         "mo:base/Blob";
 import Hash         "mo:base/Hash";
 import Iter         "mo:base/Iter";
 import Nat          "mo:base/Nat";
+import Nat32        "mo:base/Nat32";
 import Nat64        "mo:base/Nat64";
 import Option       "mo:base/Option";
 import Principal    "mo:base/Principal";
@@ -94,13 +96,25 @@ shared actor class SDM() = this {
     await _registerTag(caller, uid);
   };
 
-  public shared({ caller }) func importScans(uid : T.TagUid, data : [Hex.Hex]) {
-    assert(_isAdmin(caller));
+  public shared({ caller }) func importScans(
+    uid : T.TagUid, 
+    data : [Hex.Hex]
+    ) {
+      assert(_isAdmin(caller));
 
-    tagCMACs.put(uid, data);
+      tagCMACs.put(uid, data);
   };
 
+  public shared({ caller }) func isAdmin() : async Bool {
+    if (_isAdmin(caller)) {
+      return true;
+    };
+    return false;
+  };
 
+  public shared({ caller }) func scan( scan : T.Scan) : async T.ScanResult {
+      await _scan(caller, scan);
+  };
 
 
 
@@ -141,14 +155,133 @@ shared actor class SDM() = this {
     return result;
   };
 
+  private func _scan(p : Principal, scan : T.Scan) : async T.ScanResult {
+      switch (tagSecrets.get(scan.uid)) {
+        case (?secrets) {
+
+          switch (tagCMACs.get(scan.uid)) {
+            case (?validCmacList) {
+
+              if (validCmacList[Nat32.toNat(scan.ctr)] == scan.cmac /* && scan.ctr > secrets.ctr */) {
+
+                switch (tagWallets.get(scan.uid)) {
+                  case (?wallet) {
+
+                    switch (owners.get(scan.uid)) {
+                      case (?owner) {
+                        let isValidTransferCode = secrets.transfer_code == scan.transfer_code;
+
+                        if (owner == p) {
+                          // They are the current owner (transfer code change?)
+                          let updated_secrets = {
+                            key = secrets.key;
+                            ctr = scan.ctr;
+                            transfer_code = secrets.transfer_code;
+                          };
+                          tagSecrets.put(scan.uid, updated_secrets);
+
+                          #Ok({
+                            owner = true;
+                            locked = Bool.lognot(isValidTransferCode);
+                            transfer_code = ?secrets.transfer_code;
+                            wallet = wallet;
+                          });
+
+                        } else if (isValidTransferCode) {
+                          // They are new owner
+                          let new_transfer_code = await Helpers.generate_key();
+                          let updated_secrets = {
+                            key = secrets.key;
+                            ctr = scan.ctr;
+                            transfer_code = new_transfer_code;
+                          };
+                          tagSecrets.put(scan.uid, updated_secrets);
+                          _removeTagFromBalance(owner, scan.uid);
+                          _addTagToBalance(p, scan.uid);
+                          owners.put(scan.uid, p);
+
+                          #Ok({
+                            owner = true;
+                            locked = true;
+                            transfer_code = ?new_transfer_code;
+                            wallet = wallet;
+                          });
+                          
+                        } else {
+                          // read only
+                          let updated_secrets = {
+                            key = secrets.key;
+                            ctr = scan.ctr;
+                            transfer_code = secrets.transfer_code;
+                          };
+                          tagSecrets.put(scan.uid, updated_secrets);
+
+                          #Ok({
+                            owner = false;
+                            locked = true;
+                            transfer_code = null;
+                            wallet = wallet;
+                          });
+                        };
+                      };
+
+                      case _ {
+                        #Err({
+                          msg = "Could not find tag owner.";
+                        });
+                      };
+                    };
+                  };
+
+                  case _ {
+                    #Err({
+                      msg = "Could not find tag wallet.";
+                    });
+                  };
+                };
+
+              } else {
+                #Err({
+                  msg = "CMAC not valid.";
+                });
+              }
+            };
+
+            case _ {
+              #Err({
+                msg = "CMAC not found.";
+              });
+            };
+          };
+        };
+
+        case _ {
+          #Err({
+            msg = "This tag is not recognized.";
+          });
+        };
+      };
+  };
 
 
 
+////////////
 
   private func _addTagToBalance(p : Principal, uid : T.TagUid) {
     switch (balances.get(p)) {
       case (?v) {
         balances.put(p, Array.append(v,[uid]));
+      };
+      case null {
+        balances.put(p, [uid]);
+      }
+    }
+  };
+
+  private func _removeTagFromBalance(p : Principal, uid : T.TagUid) {
+    switch (balances.get(p)) {
+      case (?v) {
+        balances.put(p, Array.filter<Nat64>(v, func (e : T.TagUid) : Bool { e != uid; }));
       };
       case null {
         balances.put(p, [uid]);

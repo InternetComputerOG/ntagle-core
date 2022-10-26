@@ -47,6 +47,22 @@ export function createActor(options) {
 
 export const auth = writable({
   loggedIn: false,
-  actor: createActor(),
-  admin: false
+  actor: createActor()
+});
+
+export const adminStatus = writable(false);
+
+export const scanCredentials = writable({
+  uid: 0,
+  ctr: 0,
+  cmac: "",
+  transfer_code: ""
+});
+
+export const tag = writable({
+  valid: false,
+  owner: false,
+  locked: true,
+  transfer_code: null,
+  wallet: null
 });

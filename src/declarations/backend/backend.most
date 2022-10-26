@@ -1,12 +1,15 @@
 // Version: 1.0.0
+type AESKey = Hex;
 type AccountIdentifier = Blob;
 type Hex = Text;
+type TagCtr = Nat32;
+type TagSecrets = {ctr : TagCtr; key : AESKey; transfer_code : AESKey};
 type TagUid = Nat64;
 actor {
-  stable var balancesEntries : [(Principal, Nat)];
+  stable var balancesEntries : [(Principal, [TagUid])];
   stable var ownersEntries : [(TagUid, Principal)];
-  stable var tagKeysEntries : [(TagUid, Hex)];
-  stable var tagTransferCodesEntries : [(TagUid, Hex)];
+  stable var tagCMACsEntries : [(TagUid, [Hex])];
+  stable var tagSecretsEntries : [(TagUid, TagSecrets)];
   stable var tagWalletsEntries : [(TagUid, AccountIdentifier)];
   stable var tag_total : Nat
 };
