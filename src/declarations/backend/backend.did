@@ -1,0 +1,23 @@
+type TagUid = nat64;
+type TagParam = 
+ record {
+   cmac: blob;
+   ctr: blob;
+   uid: blob;
+ };
+type SDM = 
+ service {
+   decrypt: (TagParam) -> (vec nat8) query;
+   encrypt: (TagParam) -> (blob) query;
+   getRegistry: () -> (vec record {
+                             TagUid;
+                             principal;
+                           }) query;
+   reflect: (TagParam) -> (TagParam) query;
+   registerTag: (TagUid) -> (Hex, Hex);
+   show_key: () -> (vec nat8) query;
+   text_to_array: (TagParam) -> (vec nat8) query;
+   whoami: () -> (principal) query;
+ };
+type Hex = text;
+service : () -> SDM

@@ -1,0 +1,14 @@
+type TagParam = 
+ record {
+   cmac: blob;
+   ctr: blob;
+   uid: blob;
+ };
+service : {
+  decrypt: (TagParam) -> (vec nat8) query;
+  encrypt: (TagParam) -> (blob) query;
+  reflect: (TagParam) -> (TagParam) query;
+  show_key: () -> (vec nat8) query;
+  text_to_array: (TagParam) -> (vec nat8) query;
+  whoami: () -> (principal) query;
+}

@@ -1,0 +1,12 @@
+// Version: 1.0.0
+type AccountIdentifier = Blob;
+type Hex = Text;
+type TagUid = Nat64;
+actor {
+  stable var balancesEntries : [(Principal, Nat)];
+  stable var ownersEntries : [(TagUid, Principal)];
+  stable var tagKeysEntries : [(TagUid, Hex)];
+  stable var tagTransferCodesEntries : [(TagUid, Hex)];
+  stable var tagWalletsEntries : [(TagUid, AccountIdentifier)];
+  stable var tag_total : Nat
+};
