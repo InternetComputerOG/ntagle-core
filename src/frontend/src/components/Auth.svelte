@@ -11,6 +11,7 @@
   let ctr = parseInt(url.slice(62,68), 16);
   let cmac = url.slice(69,85);
   let transferCode = url.slice(86,118);
+  let loading = false;
   console.log("url: " + url);
   console.log("uid: " + uid);
   console.log("ctr: " + ctr);
@@ -26,11 +27,11 @@
     transfer_code: transferCode
   }));
 
-  let whoami = $auth.actor.whoami();
-
   onMount(async () => {
     client = await AuthClient.create();
     if (await client.isAuthenticated()) {
+      loading = true;
+      message = "Please wait...";
       handleAuth();
     }
   });
@@ -45,7 +46,6 @@
       })
     }));
 
-    whoami = $auth.actor.whoami();
     // isAdmin();
     validateScan();
   };
@@ -82,6 +82,7 @@
   };
 
   function login() {
+    loading = true;
     message = "Please wait...";
     client.login({
       identityProvider:
@@ -94,47 +95,47 @@
 
   async function logout() {
     await client.logout();
+
     auth.update(() => ({
       loggedIn: false,
       actor: createActor(),
       admin: false
     }));
 
+    scanCredentials.update(() => ({
+      uid: 0,
+      ctr: 0,
+      cmac: "",
+      transfer_code: ""
+    }));
+
+    tag.update(() => ({
+      valid: false,
+      owner: false,
+      locked: true,
+      transfer_code: null,
+      wallet: null
+    }));
+
     message = "You've successfully logged out.";
-    whoami = $auth.actor.whoami();
   };
 </script>
 
 <div class="container">
-  {#if $auth.loggedIn}
-    <div>
-      <button on:click={logout}>Log out</button>
-    </div>
-  {:else}
-    <button on:click={login}>Authenticate in with Internet Identity</button>
+  {#if !loading}
+    {#if $auth.loggedIn}
+      <div>
+        <button on:click={logout}>Log out</button>
+      </div>
+    {:else}
+      <button on:click={login}>Log in with Internet Identity</button>
+    {/if}
   {/if}
-
-  <div class="principal-info">
-    {#await whoami}
-      Querying caller identity...
-    {:then principal}
-      Your principal ID is
-      <code>{principal}</code>
-
-      {#if principal.isAnonymous()}
-        (anonymous)
-      {/if}
-    {/await}
-  </div>
-  <h3>{message}</h3>
+  <h3>{#if loading}<div class="loader"></div>{/if}{" " + message}</h3>
 </div>
 
 <style>
   .container {
     margin: 64px 0;
-  }
-
-  .principal-info {
-    margin-top: 32px;
   }
 </style>

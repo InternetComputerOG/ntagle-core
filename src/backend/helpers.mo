@@ -18,14 +18,18 @@ module {
     }; false;
   };
 
-  public func generate_key() : async Hex.Hex {
+  public func generateKey() : async Hex.Hex {
     let seed = await Random.blob();
     Hex.encode(drop<Nat8>(Blob.toArray(seed), 16));
   };
 
-  public func generate_wallet(principal: Principal, uid : T.TagUid) : Account.AccountIdentifier {
-    let subaccount = Blob.fromArray(Array.append(Array.freeze(Array.init<Nat8>(24, 0 : Nat8)), nat64ToBytes(uid)));
+  public func getUidWallet(principal: Principal, uid : T.TagUid) : Account.AccountIdentifier {
+    let subaccount = uidToSubaccount(uid);
     Account.accountIdentifier(principal, subaccount);
+  };
+
+  public func uidToSubaccount(uid : T.TagUid) : Account.Subaccount {
+    Blob.fromArray(Array.append(Array.freeze(Array.init<Nat8>(24, 0 : Nat8)), nat64ToBytes(uid)));
   };
 
   // Drops the first 'n' elements of an array, returns the remainder of that array.

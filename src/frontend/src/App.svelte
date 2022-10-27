@@ -1,12 +1,18 @@
 <script>
   import Auth from "./components/Auth.svelte";
   import { auth, adminStatus, tag } from "./store/auth";
+  import { library } from '@fortawesome/fontawesome-svg-core';
+  import { faCopy } from '@fortawesome/free-solid-svg-icons';
   import CanisterIds from "./components/CanisterIds.svelte";
   import CMAC from "./components/CMAC.svelte";
   import Encode from "./components/Encode.svelte";
   import Form from "./components/Form.svelte";
   import Links from "./components/Links.svelte";
   import Tag from "./components/Tag.svelte";
+
+  // Add fontawesome Copy icon
+  const icons = [faCopy];
+  library.add(icons);
 </script>
 
 <main>
@@ -25,11 +31,11 @@
   {/if}
   {#if $auth.loggedIn && $adminStatus}
     <Form />
-    <Links />
     <CMAC />
     <Encode />
+    <Links />
+    <CanisterIds />
   {/if}
-  <CanisterIds />
 </main>
 
 <style>

@@ -45,6 +45,7 @@ type SDM =
    registerTag: (TagUid) -> (TagEncodeResult);
    scan: (Scan) -> (ScanResult);
    show_key: () -> (vec nat8) query;
+   tagBalance: (TagUid) -> (nat64);
    text_to_array: (TagParam) -> (vec nat8) query;
    whoami: () -> (principal) query;
  };

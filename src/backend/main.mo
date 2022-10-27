@@ -1,7 +1,14 @@
+//  ----------- Decription
+//  This Motoko file contains the logic of the backend canister.
+
+//  ----------- Imports
+
+//  Imports from Motoko Base Library
 import Array        "mo:base/Array";
 import Bool         "mo:base/Bool";
 import Blob         "mo:base/Blob";
 import Hash         "mo:base/Hash";
+import Int          "mo:base/Int";
 import Iter         "mo:base/Iter";
 import Nat          "mo:base/Nat";
 import Nat32        "mo:base/Nat32";
@@ -9,13 +16,18 @@ import Nat64        "mo:base/Nat64";
 import Option       "mo:base/Option";
 import Principal    "mo:base/Principal";
 import Text         "mo:base/Text";
+import Time         "mo:base/Time";
 import TrieMap      "mo:base/TrieMap";
 
+//  Imports from helpers, utils, & types
 import Account      "lib/Account";
 import AES          "lib/AES";
 import Hex          "lib/Hex";
 import T            "types";
 import Helpers      "helpers";
+
+//  Imports from external interfaces
+import LT           "../ledger/ledger";
 
 shared actor class SDM() = this {
   let key = Array.freeze<Nat8>(Array.init(16, 0 : Nat8));
@@ -82,8 +94,9 @@ shared actor class SDM() = this {
   private let tagWallets : TrieMap.TrieMap<T.TagUid, Account.AccountIdentifier> = TrieMap.fromEntries<T.TagUid, Account.AccountIdentifier>(tagWalletsEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
   private let tagCMACs : TrieMap.TrieMap<T.TagUid, [Hex.Hex]> = TrieMap.fromEntries<T.TagUid, [Hex.Hex]>(tagCMACsEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
 
-
-
+  //  ----------- Configure external actors
+  let Ledger = actor "ryjl3-tyaaa-aaaaa-aaaba-cai" : LT.Self;
+  let icp_fee : Nat64 = 10_000;
 
   public query func getRegistry() : async [(T.TagUid, Principal)] {
     _getOwnerEntries();
@@ -116,7 +129,23 @@ shared actor class SDM() = this {
       await _scan(caller, scan);
   };
 
+  public shared({ caller }) func tagBalance(uid : T.TagUid) : async Nat64 {
+    await _tagBalance(uid);
+  };
 
+  public shared({ caller }) func withdraw(
+      uid : T.TagUid, 
+      account_id : [Nat8], 
+      amount : ?Nat64
+    ) : async LT.TransferResult {
+      assert(_isOwner(uid, caller));
+
+      await _withdraw(
+        uid, 
+        account_id,
+        amount
+      ); 
+  };
 
 
 ////
@@ -136,11 +165,11 @@ shared actor class SDM() = this {
     assert not _tag_exists(uid);
 
     let tag_secrets : T.TagSecrets = {
-      key = await Helpers.generate_key();
+      key = await Helpers.generateKey();
       ctr = 0 : Nat32;
-      transfer_code = await Helpers.generate_key();
+      transfer_code = await Helpers.generateKey();
     };
-    let tag_wallet : Account.AccountIdentifier = Helpers.generate_wallet(Principal.fromActor(this), uid);
+    let tag_wallet : Account.AccountIdentifier = Helpers.getUidWallet(Principal.fromActor(this), uid);
 
     _addTagToBalance(owner, uid);
     owners.put(uid, owner);        
@@ -189,7 +218,7 @@ shared actor class SDM() = this {
 
                         } else if (isValidTransferCode) {
                           // They are new owner
-                          let new_transfer_code = await Helpers.generate_key();
+                          let new_transfer_code = await Helpers.generateKey();
                           let updated_secrets = {
                             key = secrets.key;
                             ctr = scan.ctr;
@@ -263,7 +292,60 @@ shared actor class SDM() = this {
       };
   };
 
+  private func _tagBalance(uid : T.TagUid) : async Nat64 {
 
+    switch (tagWallets.get(uid)) {
+      case (?wallet) {
+        let icpBalance = await Ledger.account_balance({
+          account = Blob.toArray(wallet);
+        });
+
+        return icpBalance.e8s;
+      };
+
+      case _ {
+        return 0 : Nat64;
+      }
+    };
+  };
+
+  private func _isOwner(uid : T.TagUid, p : Principal) : Bool {
+
+    switch (owners.get(uid)) {
+      case (?v) {
+        return v == p;
+      };
+
+      case _ {
+        return false;
+      };
+    };
+  };
+
+  private func _withdraw(
+    uid : T.TagUid,
+    account_id : [Nat8],
+    amount : ?Nat64
+    ) : async LT.TransferResult {
+      var icp_amount = 0 :Nat64;
+
+      switch (amount) {
+        case (?withdrawAmount) {
+          icp_amount := withdrawAmount;
+        };
+
+        case _ {
+          icp_amount := await _tagBalance(uid);
+        };
+      };
+
+      //  Transfer that amount back to user
+      await transferICP(
+        uid, 
+        account_id, 
+        icp_amount
+      );
+  };
 
 ////////////
 
@@ -291,6 +373,23 @@ shared actor class SDM() = this {
 
   private func _tag_exists(uid : T.TagUid) : Bool {
     return Option.isSome(owners.get(uid));
+  };
+
+  //  ----------- ICP Ledger & Transaction Functions
+  private func transferICP(
+    uid : T.TagUid, 
+    transferTo : [Nat8], 
+    transferAmount : Nat64
+    ) : async LT.TransferResult {
+      let res =  await Ledger.transfer({
+        memo: Nat64 = uid;
+        from_subaccount = ?Blob.toArray(Helpers.uidToSubaccount(uid));
+        to = transferTo;
+        //  The amount of ICP, minus the necessary transaction fee
+        amount = { e8s = transferAmount - icp_fee };
+        fee = { e8s = icp_fee };
+        created_at_time = ?{ timestamp_nanos = Nat64.fromNat(Int.abs(Time.now())) };
+      });
   };
 
 

@@ -41,6 +41,7 @@ export const idlFactory = ({ IDL }) => {
     'registerTag' : IDL.Func([TagUid], [TagEncodeResult], []),
     'scan' : IDL.Func([Scan], [ScanResult], []),
     'show_key' : IDL.Func([], [IDL.Vec(IDL.Nat8)], ['query']),
+    'tagBalance' : IDL.Func([TagUid], [IDL.Nat64], []),
     'text_to_array' : IDL.Func([TagParam], [IDL.Vec(IDL.Nat8)], ['query']),
     'whoami' : IDL.Func([], [IDL.Principal], ['query']),
   });

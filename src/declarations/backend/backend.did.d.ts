@@ -14,6 +14,7 @@ export interface SDM {
   'registerTag' : ActorMethod<[TagUid], TagEncodeResult>,
   'scan' : ActorMethod<[Scan], ScanResult>,
   'show_key' : ActorMethod<[], Array<number>>,
+  'tagBalance' : ActorMethod<[TagUid], bigint>,
   'text_to_array' : ActorMethod<[TagParam], Array<number>>,
   'whoami' : ActorMethod<[], Principal>,
 }
