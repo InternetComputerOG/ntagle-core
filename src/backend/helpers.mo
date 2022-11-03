@@ -1,6 +1,7 @@
 import Array        "mo:base/Array";
 import Blob         "mo:base/Blob";
 import Bool         "mo:base/Bool";
+import Float        "mo:base/Float";
 import Nat          "mo:base/Nat";
 import Nat8         "mo:base/Nat8";
 import Nat64        "mo:base/Nat64";
@@ -49,5 +50,45 @@ module {
       Nat8.fromNat(Nat64.toNat(n & 0xff))
     };
     [byte(n >> 56), byte(n >> 48), byte(n >> 40), byte(n >> 32), byte(n >> 24), byte(n >> 16), byte(n >> 8), byte(n)]
+  };
+
+  public func distance(myLocation : ?T.Location, theirLocation : ?T.Location) : Text {
+    
+    switch (myLocation) {
+      case (?startLocation) {
+
+        switch (theirLocation) {
+          case (?endLocation) {
+            return calculateMiles(startLocation, endLocation) # " miles away";
+          };
+
+          case _ {
+            "unknown";
+          };
+        };
+      };
+
+      case _ {
+        "unknown";
+      };
+    };
+  };
+
+  func calculateMiles(start : T.Location, end : T.Location) : Text {
+    let r : Float = 3958.8; // Radius of the earth in miles
+    let dLat = deg2rad(end.latitude - start.latitude);
+    let dLon = deg2rad(end.longitude - start.longitude);
+    let a = 
+      Float.sin(dLat / 2) * Float.sin(dLat / 2) + 
+      Float.cos(deg2rad(start.latitude)) * Float.cos(deg2rad(end.latitude)) *
+      Float.sin(dLon / 2) * Float.sin(dLon / 2);
+    let c = 2 * Float.arctan2(Float.sqrt(a), Float.sqrt(1 - a));
+    let d = r * c; // Distance in miles
+
+    Float.format(#fix 2, d);
+  };
+
+  func deg2rad(degrees : Float) : Float {
+    degrees * (Float.pi / 180);
   };
 }

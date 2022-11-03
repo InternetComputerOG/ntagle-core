@@ -4,10 +4,9 @@
   import { FontAwesomeIcon } from 'fontawesome-svelte';
   import { auth, tag, scanCredentials } from "../store/auth";
 
-  let walletBalance;
+  let walletBalance = 0;
   let withdrawalAddress;
-  let withdrawalAmount;
-
+  let withdrawalAmount = 0;
 
   let pendingWithdrawal = false;
   let pendingBalanceRefresh = true;
@@ -25,7 +24,8 @@
   async function getBalance() {
     pendingBalanceRefresh = true;
     let newBalance = await $auth.actor.tagBalance($scanCredentials.uid);
-    walletBalance = (Number(newBalance) / 100000000).toFixed(2);
+    walletBalance = parseInt((Number(newBalance) / 100000000).toFixed(4));
+    withdrawalAmount = walletBalance;
     pendingBalanceRefresh = false;
   }
 
@@ -34,9 +34,9 @@
     let result;
 
     if (amount == walletBalance) {
-      result = await $auth.actor.withdraw(uid, AccountIdentifier.fromHex(address).bytes);
+      result = await $auth.actor.withdraw(uid, AccountIdentifier.fromHex(address).bytes, 0);
     } else {
-      result = await $auth.actor.withdraw(uid, AccountIdentifier.fromHex(address).bytes, amount);
+      result = await $auth.actor.withdraw(uid, AccountIdentifier.fromHex(address).bytes, amount * 100000000);
     };
 
     if(result.hasOwnProperty("Ok")) {
@@ -49,6 +49,10 @@
     pendingWithdrawal = false;
     
     getBalance();
+
+    setTimeout(() => {
+      withdrawalResult = "";
+    }, 10000)
   }
 
   function copyDepositAddress(text) {
@@ -57,16 +61,23 @@
       navigator.clipboard.writeText(text);
     }
     setTimeout(() => {
-      didCopyDepositAddress = false
+      didCopyDepositAddress = false;
     }, 3000)
   };
 
-  function capAmount(amount) {
-    if (amount > walletBalance) {
-      withdrawalAmount = parseFloat((walletBalance).toFixed(4));
+  function capAmount(amount, amountCap) {
+    if (amount > amountCap && amount > 0.0001) {
+      withdrawalAmount = parseFloat((amountCap).toFixed(4));
     };
   };
+
+  function maxAmount(amountMax) {
+    withdrawalAmount = parseFloat((amountMax).toFixed(4));
+  };
+
 </script>
+
+<svelte:window on:keyup={capAmount(withdrawalAmount, Number(walletBalance))}/>
 
 <div class="container">
   <h1>Tag #{$scanCredentials.uid} | 
@@ -82,17 +93,12 @@
   {:else}
     <h3>You are not the owner of this tag.</h3>
   {/if}
-
-  <!-- <h2>Transfer Code</h2>
-  <div class="transfer-code">
-    {$tag.transfer_code}
-  </div> -->
 </div>
 
-<div class="container">
+<div class="tag-wallet container">
   <h2>Tag Wallet</h2>
   <div class="wallet-address">
-    {$tag.wallet}
+    <span class="wallet-address-container">{$tag.wallet}</span>
     <span class="copy-icon" on:click={() => copyDepositAddress($tag.wallet)}>
       <FontAwesomeIcon icon="copy" />
       {#if didCopyDepositAddress}
@@ -107,7 +113,7 @@
       {#if pendingBalanceRefresh}
         <div class="loader"></div> Refreshing...
       {:else}
-        {walletBalance}
+        {walletBalance.toFixed(2)}
       {/if}
     </h3>
     {#if !pendingBalanceRefresh}
@@ -125,27 +131,36 @@
           <br/><div class="loader"></div> Processing Your Withdrawal...
         {:else}
           <h4>Withdrawal Address:</h4>
-          <input bind:value={withdrawalAddress}>
+          <input class="withdraw-address-input" bind:value={withdrawalAddress}>
           <h4>Withdrawal Amount:</h4>
           <input 
             type="number" 
+            class="withdraw-amount-input"
             bind:value={withdrawalAmount}
-            on:change={capAmount(withdrawalAmount)}
+            min=0 
+            max={walletBalance}
           >
           <button 
-            on:click={withdrawalAmount = parseFloat((walletBalance).toFixed(4))} 
-            class:hide={withdrawalAmount == walletBalance}
+            on:click={maxAmount(Number(walletBalance))} 
+            disabled={withdrawalAmount == walletBalance}
           >
             Max
           </button>
           <br />
-          <button on:click={withdrawICP($scanCredentials.uid, withdrawalAddress, withdrawalAmount)}>Withdraw <strong>{parseFloat((withdrawalAmount - 0.0001).toFixed(4))}</strong> ICP</button>
+          {#if withdrawalAmount > 0.0001}
+            <button 
+              on:click={withdrawICP($scanCredentials.uid, withdrawalAddress, withdrawalAmount)}
+            >
+              Withdraw <strong>{parseFloat((withdrawalAmount - 0.0001).toFixed(4))}</strong> ICP
+            </button>
+            <h6>*includes 0.0001 ICP transaction fee</h6>
+          {/if}
         {/if}
       </div>
     {/if}
 
     {#if withdrawalResult != ""}
-      <div class="withdrawal-result">
+      <div class="withdrawal-result container">
         {withdrawalResult}
       </div>
   {/if}
@@ -153,10 +168,17 @@
 </div>
 
 <style>
-  .container, .withdrawal-result {
+  .container {
     margin: 30px 0;
-    border: 2px solid #fff;
     padding: 15px;
+  }
+
+  .tag-wallet, .withdrawal-result {
+    border: 2px solid #fff;
+  }
+
+  h6 {
+    margin-top: 0px;
   }
 
   .hide {
@@ -177,6 +199,11 @@
     font-size: 12px;
   }
 
+  .wallet-address-container {
+    max-width: 80%;
+    overflow-wrap: break-word;
+  }
+
   .copy-icon {
     color: #a9a9a9;
     cursor: pointer;
@@ -187,10 +214,12 @@
     cursor: copy;
   }
 
-  input {
-    padding: 12px;
+  .withdraw-address-input {
     width: 80%;
-    border-radius: 6px;
+  }
+
+  .withdraw-amount-input {
+    width: 200px;
   }
 
   @media (min-width: 640px) {

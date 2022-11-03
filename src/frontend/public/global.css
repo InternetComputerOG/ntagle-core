@@ -30,7 +30,14 @@ a:hover {
   text-decoration: underline;
 }
 
+button:disabled {
+  color:#3b3b3b;
+  background-color:grey;
+}
+
 button {
+  margin: 10px;
+  height: 36px;
   padding: 8px 32px;
   color: var(--color-black);
   background-color: white;
@@ -48,6 +55,16 @@ button.outline {
   border: 1px solid white;
   color: white;
   background-color: transparent;
+}
+
+input {
+  padding: 9px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border-color: white;
+  font-size: 13px;
+  line-height: 14px;
+  border-radius: 4px;
 }
 
 .loader {

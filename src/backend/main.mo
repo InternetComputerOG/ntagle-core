@@ -7,6 +7,7 @@
 import Array        "mo:base/Array";
 import Bool         "mo:base/Bool";
 import Blob         "mo:base/Blob";
+import Buffer       "mo:base/Buffer";
 import Hash         "mo:base/Hash";
 import Int          "mo:base/Int";
 import Iter         "mo:base/Iter";
@@ -79,6 +80,7 @@ shared actor class SDM() = this {
   ///////////////////////////////////////////////////////////////
 
   private stable var tag_total : Nat = 0;
+  private stable var chat_messages : Nat = 0;
   let internet_identity_principal_isaac : Principal = Principal.fromText("gvi7s-tbk2k-4qba4-mw6qj-azomr-rrwex-byyqb-icyrn-eygs4-nrmm5-eae");
   var admins : [Principal] = [internet_identity_principal_isaac]; 
 
@@ -87,12 +89,14 @@ shared actor class SDM() = this {
   private stable var tagSecretsEntries : [(T.TagUid, T.TagSecrets)] = [];
   private stable var tagWalletsEntries : [(T.TagUid, Account.AccountIdentifier)] = [];
   private stable var tagCMACsEntries : [(T.TagUid, [Hex.Hex])] = [];
+  private stable var chatsEntries : [(Nat, T.ChatMessage)] = [];
 
   private let owners : TrieMap.TrieMap<T.TagUid, Principal> = TrieMap.fromEntries<T.TagUid, Principal>(ownersEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
   private let balances : TrieMap.TrieMap<Principal, [T.TagUid]> = TrieMap.fromEntries<Principal, [T.TagUid]>(balancesEntries.vals(), Principal.equal, Principal.hash);
   private let tagSecrets : TrieMap.TrieMap<T.TagUid, T.TagSecrets> = TrieMap.fromEntries<T.TagUid, T.TagSecrets>(tagSecretsEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
   private let tagWallets : TrieMap.TrieMap<T.TagUid, Account.AccountIdentifier> = TrieMap.fromEntries<T.TagUid, Account.AccountIdentifier>(tagWalletsEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
   private let tagCMACs : TrieMap.TrieMap<T.TagUid, [Hex.Hex]> = TrieMap.fromEntries<T.TagUid, [Hex.Hex]>(tagCMACsEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
+  private let chats : TrieMap.TrieMap<Nat, T.ChatMessage> = TrieMap.fromEntries<Nat, T.ChatMessage>(chatsEntries.vals(), Nat.equal, Hash.hash);
 
   //  ----------- Configure external actors
   let Ledger = actor "ryjl3-tyaaa-aaaaa-aaaba-cai" : LT.Self;
@@ -136,7 +140,7 @@ shared actor class SDM() = this {
   public shared({ caller }) func withdraw(
       uid : T.TagUid, 
       account_id : [Nat8], 
-      amount : ?Nat64
+      amount : Nat64
     ) : async LT.TransferResult {
       assert(_isOwner(uid, caller));
 
@@ -145,6 +149,13 @@ shared actor class SDM() = this {
         account_id,
         amount
       ); 
+  };
+
+  public shared({ caller }) func postMessage(message : T.NewMessage) : async [T.LoggedMessage] {
+    assert _isOwner(message.uid, caller);
+
+    chat_messages += 1;
+    await _postMessage(caller, message);
   };
 
 
@@ -191,7 +202,7 @@ shared actor class SDM() = this {
           switch (tagCMACs.get(scan.uid)) {
             case (?validCmacList) {
 
-              if (validCmacList[Nat32.toNat(scan.ctr)] == scan.cmac /* && scan.ctr > secrets.ctr */) {
+              if ( Bool.logand(validCmacList[Nat32.toNat(scan.ctr)] == scan.cmac, scan.ctr > secrets.ctr)) {
 
                 switch (tagWallets.get(scan.uid)) {
                   case (?wallet) {
@@ -271,7 +282,7 @@ shared actor class SDM() = this {
 
               } else {
                 #Err({
-                  msg = "CMAC not valid.";
+                  msg = "CMAC not valid or already used previously.";
                 });
               }
             };
@@ -325,18 +336,14 @@ shared actor class SDM() = this {
   private func _withdraw(
     uid : T.TagUid,
     account_id : [Nat8],
-    amount : ?Nat64
+    amount : Nat64
     ) : async LT.TransferResult {
       var icp_amount = 0 :Nat64;
 
-      switch (amount) {
-        case (?withdrawAmount) {
-          icp_amount := withdrawAmount;
-        };
-
-        case _ {
-          icp_amount := await _tagBalance(uid);
-        };
+      if (amount == 0) {
+        icp_amount := await _tagBalance(uid);
+      } else {
+        icp_amount := amount;
       };
 
       //  Transfer that amount back to user
@@ -345,6 +352,21 @@ shared actor class SDM() = this {
         account_id, 
         icp_amount
       );
+  };
+
+  private func _postMessage(caller : Principal, message : T.NewMessage) : async [T.LoggedMessage] {
+    let new_message : T.ChatMessage = {
+      from = caller;
+      uid = message.uid;
+      time = Nat64.fromNat(Int.abs(Time.now()));
+      balance = await _tagBalance(message.uid);
+      location = message.location;
+      message = message.message;
+    };
+
+    chats.put(chat_messages, new_message);
+
+    return chatLog(message.location);
   };
 
 ////////////
@@ -375,6 +397,23 @@ shared actor class SDM() = this {
     return Option.isSome(owners.get(uid));
   };
 
+  private func chatLog(location : ?T.Location) : [T.LoggedMessage] {
+    let result = Buffer.Buffer<T.LoggedMessage>(chat_messages);
+
+    for (message in chats.vals()) {
+      result.add({
+        from = message.from;
+        uid = message.uid;
+        time = message.time;
+        balance = message.balance;
+        location = Helpers.distance(location, message.location);
+        message = message.message
+      });
+    };
+
+    return result.toArray();    
+  };
+
   //  ----------- ICP Ledger & Transaction Functions
   private func transferICP(
     uid : T.TagUid, 
@@ -400,6 +439,7 @@ shared actor class SDM() = this {
     tagSecretsEntries := Iter.toArray(tagSecrets.entries());
     tagWalletsEntries := Iter.toArray(tagWallets.entries());
     tagCMACsEntries := Iter.toArray(tagCMACs.entries());
+    chatsEntries := Iter.toArray(chats.entries());
   };
 
   system func postupgrade() {
@@ -408,5 +448,6 @@ shared actor class SDM() = this {
     tagSecretsEntries := [];
     tagWalletsEntries := [];
     tagCMACsEntries := [];
+    chatsEntries := [];
   };
 };

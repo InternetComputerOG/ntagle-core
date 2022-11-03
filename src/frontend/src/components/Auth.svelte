@@ -67,12 +67,16 @@
         transfer_code: result.Ok.transfer_code,
         wallet: accountIdentifierFromBytes(result.Ok.wallet)
       }));
-      message = "Scan validated!"
+      message = "Scan validated!";
+      setTimeout(() => {
+        message = "";
+      }, 5000)
     } else if ( result.hasOwnProperty("Err") ) {
       message = result.Err.msg;
     } else {
       message = "Something went wrong, your scan could not be validated."
-    }
+    };
+    loading = false;
   };
 
   async function isAdmin() {
@@ -136,6 +140,6 @@
 
 <style>
   .container {
-    margin: 64px 0;
+    margin: 60px 0 30px;
   }
 </style>

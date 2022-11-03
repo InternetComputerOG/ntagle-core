@@ -1,3 +1,17 @@
+type TransferResult = 
+ variant {
+   Err: TransferError;
+   Ok: BlockIndex;
+ };
+type TransferError = 
+ variant {
+   BadFee: record {expected_fee: Tokens;};
+   InsufficientFunds: record {balance: Tokens;};
+   TxCreatedInFuture;
+   TxDuplicate: record {duplicate_of: BlockIndex;};
+   TxTooOld: record {allowed_window_nanos: nat64;};
+ };
+type Tokens = record {e8s: nat64;};
 type TagUid = nat64;
 type TagParam = 
  record {
@@ -41,6 +55,7 @@ type SDM =
                            }) query;
    importScans: (TagUid, vec Hex) -> () oneway;
    isAdmin: () -> (bool);
+   postMessage: (NewMessage) -> (vec LoggedMessage);
    reflect: (TagParam) -> (TagParam) query;
    registerTag: (TagUid) -> (TagEncodeResult);
    scan: (Scan) -> (ScanResult);
@@ -48,8 +63,30 @@ type SDM =
    tagBalance: (TagUid) -> (nat64);
    text_to_array: (TagParam) -> (vec nat8) query;
    whoami: () -> (principal) query;
+   withdraw: (TagUid, vec nat8, nat64) -> (TransferResult);
+ };
+type NewMessage = 
+ record {
+   location: opt Location;
+   message: text;
+   uid: TagUid;
+ };
+type LoggedMessage = 
+ record {
+   balance: nat64;
+   from: principal;
+   location: text;
+   message: text;
+   time: nat64;
+   uid: TagUid;
+ };
+type Location = 
+ record {
+   latitude: float64;
+   longitude: float64;
  };
 type Hex = text;
 type CMAC = text;
+type BlockIndex = nat64;
 type AESKey = text;
 service : () -> SDM

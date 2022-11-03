@@ -1,7 +1,9 @@
 import Bool         "mo:base/Bool";
 import Blob         "mo:base/Blob";
+import Float        "mo:base/Float";
 import Nat32        "mo:base/Nat32";
 import Nat64        "mo:base/Nat64";
+import Text         "mo:base/Text";
 
 import Hex          "lib/Hex";
 
@@ -54,5 +56,34 @@ module {
     key : AESKey;
     ctr : TagCtr;
     transfer_code : AESKey;
+  };
+
+  public type Location = {
+    latitude : Float;
+    longitude : Float;
+  };
+
+  public type ChatMessage = {
+    from : Principal;
+    uid : TagUid;
+    time : Nat64;
+    balance : Nat64;
+    location : ?Location;
+    message : Text;
+  };
+
+  public type NewMessage = {
+    uid : TagUid;
+    location : ?Location;
+    message : Text;
+  };
+
+  public type LoggedMessage = {
+    from : Principal;
+    uid : TagUid;
+    time : Nat64;
+    balance : Nat64;
+    location : Text;
+    message : Text;
   };
 }

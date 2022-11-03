@@ -1,12 +1,24 @@
 // Version: 1.0.0
 type AESKey = Hex;
 type AccountIdentifier = Blob;
+type ChatMessage =
+  {
+    balance : Nat64;
+    from : Principal;
+    location : ?Location;
+    message : Text;
+    time : Nat64;
+    uid : TagUid
+  };
 type Hex = Text;
+type Location = {latitude : Float; longitude : Float};
 type TagCtr = Nat32;
 type TagSecrets = {ctr : TagCtr; key : AESKey; transfer_code : AESKey};
 type TagUid = Nat64;
 actor {
   stable var balancesEntries : [(Principal, [TagUid])];
+  stable var chat_messages : Nat;
+  stable var chatsEntries : [(Nat, ChatMessage)];
   stable var ownersEntries : [(TagUid, Principal)];
   stable var tagCMACsEntries : [(TagUid, [Hex])];
   stable var tagSecretsEntries : [(TagUid, TagSecrets)];
