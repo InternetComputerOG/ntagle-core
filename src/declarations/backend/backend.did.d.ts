@@ -22,6 +22,7 @@ export interface NewMessage {
 export interface SDM {
   'decrypt' : ActorMethod<[TagParam], Array<number>>,
   'encrypt' : ActorMethod<[TagParam], Array<number>>,
+  'getChatLog' : ActorMethod<[TagUid, [] | [Location]], Array<LoggedMessage>>,
   'getRegistry' : ActorMethod<[], Array<[TagUid, Principal]>>,
   'importScans' : ActorMethod<[TagUid, Array<Hex>], undefined>,
   'isAdmin' : ActorMethod<[], boolean>,

@@ -63,13 +63,13 @@ module {
           };
 
           case _ {
-            "unknown";
+            "Posted with no location";
           };
         };
       };
 
       case _ {
-        "unknown";
+        "Your location is unknown.";
       };
     };
   };

@@ -16,8 +16,6 @@ body {
   padding: 8px;
   font-size: 16px;
   box-sizing: border-box;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
 a,
@@ -37,18 +35,23 @@ button:disabled {
 
 button {
   margin: 10px;
-  height: 36px;
-  padding: 8px 32px;
+  height: 46px;
+  padding: 13px 32px;
   color: var(--color-black);
   background-color: white;
   letter-spacing: 0.35px;
   appearance: none;
   font-size: 15px;
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-  font-weight: 300;
+  font-weight: 900;
   border: none;
   cursor: pointer;
+
+  --mask:
+    radial-gradient(3px at calc(100% - 10.00px) 10px,#0000 98%,#000) 100%/51% 100% no-repeat,
+    radial-gradient(3px at 10px calc(100% - 10.00px),#0000 98%,#000) 0   /51% 100% no-repeat;
+  -webkit-mask: var(--mask);
+          mask: var(--mask);
+  clip-path: polygon(0 10.00px,10.00px 0,calc(100% - 10.00px) 0,100% 10.00px,100% calc(100% - 10.00px),calc(100% - 10.00px) 100%,10.00px 100%,0 calc(100% - 10.00px));
 }
 
 button.outline {
@@ -77,6 +80,15 @@ input {
   -webkit-animation: spin 2s linear infinite; /* Safari */
   animation: spin 2s linear infinite;
 }
+
+/* .box {
+  --mask:
+    radial-gradient(2px at calc(100% - 6.00px) 6px,#0000 98%,#000) 100%/51% 100% no-repeat,
+    radial-gradient(2px at 6px calc(100% - 6.00px),#0000 98%,#000) 0   /51% 100% no-repeat;
+  -webkit-mask: var(--mask);
+          mask: var(--mask);
+  clip-path: polygon(0 10.00px,10.00px 0,calc(100% - 10.00px) 0,100% 10.00px,100% calc(100% - 10.00px),calc(100% - 10.00px) 100%,10.00px 100%,0 calc(100% - 10.00px));
+} */
 
 /* Safari */
 @-webkit-keyframes spin {

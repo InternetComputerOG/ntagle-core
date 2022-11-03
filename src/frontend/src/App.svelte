@@ -18,22 +18,18 @@
 </script>
 
 <main>
-  <!-- <a
-    href="https://dfinity.org"
-    target="_blank"
-    rel="noopener noreferrer"
-    class="logo"
-  >
-    <img src="images/dfinity.svg" alt="DFINITY logo" />
-  </a> -->
-  <h1>ntagle (Demo)</h1>
+  <div class="container">
+    <img src="images/ntagle-logo.png" alt="ntagle logo" />
+  </div>
   <Auth />
   {#if $tag.valid}
     {#if $tag.locked && $tag.owner}
       <Unlock />
     {/if}
     <Tag />
-    <Chat />
+    {#if $tag.owner}
+      <Chat />
+    {/if}
   {/if}
   {#if $auth.loggedIn && $adminStatus}
     <Form />
@@ -45,14 +41,23 @@
 </main>
 
 <style>
-  /* img {
-    height: 22px;
+
+  :global(body) {
+    font-family: "Open Sans", sans-serif;
   }
-  .logo {
+
+  :global(button) {
+    font-family: Exo, sans-serif;
+  }
+
+  img {
+    object-fit: contain;
+    width: 100%;
+    height: 80px;
     display: inline-block;
     margin-bottom: 64px;
     margin-top: 24px;
-  } */
+  }
 
   main {
     text-align: center;

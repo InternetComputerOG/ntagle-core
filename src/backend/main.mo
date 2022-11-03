@@ -158,6 +158,12 @@ shared actor class SDM() = this {
     await _postMessage(caller, message);
   };
 
+  public shared({ caller }) func getChatLog(uid : T.TagUid, location: ?T.Location) : async [T.LoggedMessage] {
+    assert _isOwner(uid, caller);
+
+    _chatLog(location);
+  };
+
 
 ////
 
@@ -366,7 +372,7 @@ shared actor class SDM() = this {
 
     chats.put(chat_messages, new_message);
 
-    return chatLog(message.location);
+    return _chatLog(message.location);
   };
 
 ////////////
@@ -397,7 +403,7 @@ shared actor class SDM() = this {
     return Option.isSome(owners.get(uid));
   };
 
-  private func chatLog(location : ?T.Location) : [T.LoggedMessage] {
+  private func _chatLog(location : ?T.Location) : [T.LoggedMessage] {
     let result = Buffer.Buffer<T.LoggedMessage>(chat_messages);
 
     for (message in chats.vals()) {

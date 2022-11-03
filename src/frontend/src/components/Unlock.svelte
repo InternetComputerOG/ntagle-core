@@ -22,7 +22,9 @@
 
     try {
       const ndef = new NDEFReader();
-      await ndef.write(unlock_url);
+      await ndef.write({
+        records: [{ recordType: "url", data: unlock_url }]
+      });
       msg = "Tag Successfully Unlocked.";
 
       setTimeout(() => {

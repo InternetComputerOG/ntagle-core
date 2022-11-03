@@ -5,15 +5,9 @@ export const idlFactory = ({ IDL }) => {
     'cmac' : IDL.Vec(IDL.Nat8),
   });
   const TagUid = IDL.Nat64;
-  const Hex = IDL.Text;
   const Location = IDL.Record({
     'latitude' : IDL.Float64,
     'longitude' : IDL.Float64,
-  });
-  const NewMessage = IDL.Record({
-    'uid' : TagUid,
-    'message' : IDL.Text,
-    'location' : IDL.Opt(Location),
   });
   const LoggedMessage = IDL.Record({
     'uid' : TagUid,
@@ -22,6 +16,12 @@ export const idlFactory = ({ IDL }) => {
     'time' : IDL.Nat64,
     'message' : IDL.Text,
     'location' : IDL.Text,
+  });
+  const Hex = IDL.Text;
+  const NewMessage = IDL.Record({
+    'uid' : TagUid,
+    'message' : IDL.Text,
+    'location' : IDL.Opt(Location),
   });
   const AESKey = IDL.Text;
   const TagEncodeResult = IDL.Record({
@@ -60,6 +60,11 @@ export const idlFactory = ({ IDL }) => {
   const SDM = IDL.Service({
     'decrypt' : IDL.Func([TagParam], [IDL.Vec(IDL.Nat8)], ['query']),
     'encrypt' : IDL.Func([TagParam], [IDL.Vec(IDL.Nat8)], ['query']),
+    'getChatLog' : IDL.Func(
+        [TagUid, IDL.Opt(Location)],
+        [IDL.Vec(LoggedMessage)],
+        [],
+      ),
     'getRegistry' : IDL.Func(
         [],
         [IDL.Vec(IDL.Tuple(TagUid, IDL.Principal))],

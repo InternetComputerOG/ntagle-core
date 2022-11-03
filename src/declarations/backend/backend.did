@@ -49,6 +49,7 @@ type SDM =
  service {
    decrypt: (TagParam) -> (vec nat8) query;
    encrypt: (TagParam) -> (blob) query;
+   getChatLog: (TagUid, opt Location) -> (vec LoggedMessage);
    getRegistry: () -> (vec record {
                              TagUid;
                              principal;
