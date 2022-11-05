@@ -39,7 +39,7 @@
 <h5>Key</h5>
 {key}
 <h5>URL + Transfer Code</h5>
-<span>https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/?m=00000000000000x000000x0000000000000000x{transferCode.toUpperCase()}</span>
+<span>https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/tag?m=00000000000000x000000x0000000000000000x{transferCode}</span>
 
 <h3>Step 3: upload CMACs</h3>
 <textarea bind:value={CMACs}></textarea>
@@ -49,5 +49,6 @@
 <input bind:value={uid}>
 <input bind:value={ctr}>
 <input bind:value={cmac}>
-<button on:click={scan(uid, ctr, cmac)}>Test Scan</button>
+<input bind:value={transferCode}>
+<button on:click={scan(uid, ctr, cmac, transferCode)}>Test Scan</button>
 {scanResult}

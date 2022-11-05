@@ -13,12 +13,6 @@ type TransferError =
  };
 type Tokens = record {e8s: nat64;};
 type TagUid = nat64;
-type TagParam = 
- record {
-   cmac: blob;
-   ctr: blob;
-   uid: blob;
- };
 type TagEncodeResult = 
  record {
    key: AESKey;
@@ -66,12 +60,39 @@ type Location =
    longitude: float64;
  };
 type Hex = text;
+type DemoTagScanResult = 
+ variant {
+   Err: ScanError;
+   Ok: DemoTagScanResponse;
+ };
+type DemoTagScanResponse = 
+ record {
+   cmac: CMAC;
+   count: TagCtr;
+   transfer_code: AESKey;
+ };
+type DemoTagDataResult = 
+ variant {
+   Err: ScanError;
+   Ok: DemoTagDataResponse;
+ };
+type DemoTagDataResponse = 
+ record {
+   tag1: DemoTagData;
+   tag2: DemoTagData;
+ };
+type DemoTagData = 
+ record {
+   balance: nat64;
+   locked: bool;
+   owner: principal;
+ };
 type CMAC = text;
 type BlockIndex = nat64;
 type AESKey = text;
 service : {
-  decrypt: (TagParam) -> (vec nat8) query;
-  encrypt: (TagParam) -> (blob) query;
+  demoTagData: () -> (DemoTagDataResult);
+  demoTagGenerateScan: (nat) -> (DemoTagScanResult);
   getChatLog: (TagUid, opt Location) -> (vec LoggedMessage);
   getRegistry: () -> (vec record {
                             TagUid;
@@ -79,13 +100,11 @@ service : {
                           }) query;
   importScans: (TagUid, vec Hex) -> () oneway;
   isAdmin: () -> (bool);
+  lockDemoTag: (TagUid) -> () oneway;
   postMessage: (NewMessage) -> (vec LoggedMessage);
-  reflect: (TagParam) -> (TagParam) query;
   registerTag: (TagUid) -> (TagEncodeResult);
   scan: (Scan) -> (ScanResult);
-  show_key: () -> (vec nat8) query;
   tagBalance: (TagUid) -> (nat64);
-  text_to_array: (TagParam) -> (vec nat8) query;
-  whoami: () -> (principal) query;
+  unlockDemoTag: (TagUid) -> () oneway;
   withdraw: (TagUid, vec nat8, nat64) -> (TransferResult);
 }

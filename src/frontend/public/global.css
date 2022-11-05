@@ -60,6 +60,16 @@ button.outline {
   background-color: transparent;
 }
 
+.locked {
+  color: rgb(237, 120, 120);
+  font-weight: bold;
+}
+
+.unlocked {
+  color: rgb(69, 203, 69);
+  font-weight: bold;
+}
+
 input {
   padding: 9px;
   margin-top: 10px;
@@ -79,6 +89,10 @@ input {
   height: 12px;
   -webkit-animation: spin 2s linear infinite; /* Safari */
   animation: spin 2s linear infinite;
+}
+
+:focus-visible {
+  outline: none;
 }
 
 /* .box {

@@ -7,10 +7,15 @@
   /** @type {AuthClient} */
   let client;
   let url = window.location.href;
-  let uid = parseInt(url.slice(47,61), 16);
-  let ctr = parseInt(url.slice(62,68), 16);
-  let cmac = url.slice(69,85);
-  let transferCode = url.slice(86,118);
+
+  if (url.length < 121) {
+    window.location.href = "https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/";
+  };
+
+  let uid = parseInt(url.slice(50,64), 16);
+  let ctr = parseInt(url.slice(65,71), 16);
+  let cmac = url.slice(72,88);
+  let transferCode = url.slice(89,121);
   let loading = false;
   console.log("url: " + url);
   console.log("uid: " + uid);
@@ -73,6 +78,10 @@
       }, 5000)
     } else if ( result.hasOwnProperty("Err") ) {
       message = result.Err.msg;
+
+      setTimeout(() => {
+        window.location.href = "https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/";
+      }, 3000)
     } else {
       message = "Something went wrong, your scan could not be validated."
     };
@@ -122,6 +131,10 @@
     }));
 
     message = "You've successfully logged out.";
+
+    setTimeout(() => {
+      window.location.href = "https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/";
+    }, 3000)
   };
 </script>
 
@@ -140,6 +153,7 @@
 
 <style>
   .container {
-    margin: 60px 0 30px;
+    margin: 30px 0 30px;
+    padding: 15px;
   }
 </style>

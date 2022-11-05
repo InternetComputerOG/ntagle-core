@@ -3,11 +3,12 @@
   import { auth, adminStatus, tag } from "./store/auth";
   import { library } from '@fortawesome/fontawesome-svg-core';
   import { faCopy } from '@fortawesome/free-solid-svg-icons';
+  import { Router, Route, Link } from "svelte-navigator";
   import CanisterIds from "./components/CanisterIds.svelte";
   import Chat from "./components/Chat.svelte";
   import CMAC from "./components/CMAC.svelte";
   import Encode from "./components/Encode.svelte";
-  import Form from "./components/Form.svelte";
+  import Home from "./components/Home.svelte";
   import Links from "./components/Links.svelte";
   import Tag from "./components/Tag.svelte";
   import Unlock from "./components/Unlock.svelte";
@@ -17,28 +18,40 @@
   library.add(icons);
 </script>
 
-<main>
-  <div class="container">
-    <img src="images/ntagle-logo.png" alt="ntagle logo" />
-  </div>
-  <Auth />
-  {#if $tag.valid}
-    {#if $tag.locked && $tag.owner}
-      <Unlock />
-    {/if}
-    <Tag />
-    {#if $tag.owner}
-      <Chat />
-    {/if}
-  {/if}
-  {#if $auth.loggedIn && $adminStatus}
-    <Form />
-    <CMAC />
-    <Encode />
-    <Links />
-    <CanisterIds />
-  {/if}
-</main>
+<Router>
+  <main>
+
+    <Link to="/">
+      <div class="container">
+        <img src="images/ntagle-logo.png" alt="ntagle logo" />
+      </div>
+    </Link>
+
+    <Route path="/">
+      <Home />
+    </Route>
+
+    <Route path="tag">
+      <Auth />
+      {#if $tag.valid}
+        <!-- {#if $tag.locked && $tag.owner}
+          <Unlock />
+        {/if} -->
+        <Tag />
+        {#if $tag.owner}
+          <Chat />
+        {/if}
+      {/if}
+      {#if $auth.loggedIn && $adminStatus}
+        <CMAC />
+        <Encode />
+        <Links />
+        <CanisterIds />
+      {/if}
+    </Route>
+  
+  </main>
+</Router>
 
 <style>
 

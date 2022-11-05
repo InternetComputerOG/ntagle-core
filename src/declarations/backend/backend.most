@@ -19,6 +19,10 @@ actor {
   stable var balancesEntries : [(Principal, [TagUid])];
   stable var chat_messages : Nat;
   stable var chatsEntries : [(Nat, ChatMessage)];
+  stable var demo_tag_1_transfer_code : Text;
+  stable var demo_tag_1_uid : Nat64;
+  stable var demo_tag_2_transfer_code : Text;
+  stable var demo_tag_2_uid : Nat64;
   stable var ownersEntries : [(TagUid, Principal)];
   stable var tagCMACsEntries : [(TagUid, [Hex])];
   stable var tagSecretsEntries : [(TagUid, TagSecrets)];

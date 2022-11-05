@@ -31,59 +31,18 @@ import Helpers      "helpers";
 import LT           "../ledger/ledger";
 
 shared actor class SDM() = this {
-  let key = Array.freeze<Nat8>(Array.init(16, 0 : Nat8));
-  let buffer = Array.freeze<Nat8>(Array.init(8, 0 : Nat8));
-  let key1 = Blob.toArray(Text.encodeUtf8("0000000000000000"));
-  let prefix : [Nat8] = [0x3C : Nat8, 0xC3 : Nat8, 0x00 : Nat8 , 0x01 : Nat8, 0x00 : Nat8, 0x80 : Nat8];
-  
-  public shared query (msg) func whoami() : async Principal {
-    msg.caller;
-  };
 
-  public shared query func reflect(param : T.TagParam) : async T.TagParam {
-    param;
-  };
-
-  public shared query func decrypt(param : T.TagParam) : async [Nat8] {
-    let block = AES.new(key);
-
-    switch (block) {
-      case (?block) {
-        block.decrypt(Array.append(Blob.toArray(param.cmac), buffer));
-      };
-      case _ {[0]}
-    };
-  };
-
-  public shared query func text_to_array(param : T.TagParam) : async [Nat8] {
-    Blob.toArray(param.cmac);
-  };
-
-  public shared query func show_key() : async [Nat8] {
-    key;
-  };
-
-  public shared query func encrypt(param : T.TagParam) : async Blob {
-    let block = AES.new(key);
-
-    var digest = Array.append(Array.append(Blob.toArray(param.ctr),Blob.toArray(param.uid)), prefix);
-    //digest := Array.append(digest, Array.freeze<Nat8>(Array.init(16 - digest.size(), 0 : Nat8)));
-
-    switch (block) {
-      case (?block) {
-        Blob.fromArray(block.encrypt(digest));
-      };
-      case _ {Blob.fromArray([0]);}
-    };
-  };
-
-  ///////////////////////////////////////////////////////////////
-
+  //  ----------- Variables
   private stable var tag_total : Nat = 0;
   private stable var chat_messages : Nat = 0;
+  private stable var demo_tag_1_uid : T.TagUid = 1244790287045008;
+  private stable var demo_tag_2_uid : T.TagUid = 1207406891700624;
+  private stable var demo_tag_1_transfer_code : Text = "F5F7B4B280C2B9DA90D73746CCC05558";
+  private stable var demo_tag_2_transfer_code : Text = "1959a2a08c2e886e469d95197eb91c14";
   let internet_identity_principal_isaac : Principal = Principal.fromText("gvi7s-tbk2k-4qba4-mw6qj-azomr-rrwex-byyqb-icyrn-eygs4-nrmm5-eae");
   var admins : [Principal] = [internet_identity_principal_isaac]; 
 
+  //  ----------- State
   private stable var ownersEntries : [(T.TagUid, Principal)] = [];
   private stable var balancesEntries : [(Principal, [T.TagUid])] = [];
   private stable var tagSecretsEntries : [(T.TagUid, T.TagSecrets)] = [];
@@ -102,6 +61,7 @@ shared actor class SDM() = this {
   let Ledger = actor "ryjl3-tyaaa-aaaaa-aaaba-cai" : LT.Self;
   let icp_fee : Nat64 = 10_000;
 
+  //  ----------- Public functions
   public query func getRegistry() : async [(T.TagUid, Principal)] {
     _getOwnerEntries();
   };
@@ -164,12 +124,133 @@ shared actor class SDM() = this {
     _chatLog(location);
   };
 
+  //  Demo Tag Functions
+  public func demoTagData() : async T.DemoTagDataResult {
+    var tag_1_locked = _isLocked(demo_tag_1_uid, demo_tag_1_transfer_code);
+    var tag_1_owner = internet_identity_principal_isaac;
+    var tag_1_balance = await _tagBalance(demo_tag_1_uid);
 
-////
+    var tag_2_locked = _isLocked(demo_tag_2_uid, demo_tag_2_transfer_code);
+    var tag_2_owner = internet_identity_principal_isaac;
+    var tag_2_balance = await _tagBalance(demo_tag_2_uid);
 
+    switch (owners.get(demo_tag_1_uid)) {
+      case (?owner) {
+        tag_1_owner := owner;
+      };
 
+      case _ {
+        return #Err({
+          msg = "Could not find Demo Tag 1 Owner.";
+        }); 
+      };
+    };
 
+    switch (owners.get(demo_tag_2_uid)) {
+      case (?owner) {
+        tag_2_owner := owner;
+      };
 
+      case _ {
+        return #Err({
+          msg = "Could not find Demo Tag 2 Owner.";
+        }); 
+      };
+    };
+
+    let tag_1_data : T.DemoTagData = {
+      locked = tag_1_locked;
+      owner = tag_1_owner;
+      balance = tag_1_balance;
+    };
+
+    let tag_2_data : T.DemoTagData = {
+      locked = tag_2_locked;
+      owner = tag_2_owner;
+      balance = tag_2_balance;
+    };
+
+    #Ok({
+      tag1 = tag_1_data;
+      tag2 = tag_2_data;
+    });
+  };
+
+  public func demoTagGenerateScan(demoTag : Nat) : async T.DemoTagScanResult {
+    var tag_uid = 0 : Nat64;
+    var tag_count = 0 : Nat32;
+    var tag_transfer_code = "0";
+    var tag_cmac = "0";
+
+    if (demoTag == 1) {
+      tag_uid := demo_tag_1_uid;
+      tag_transfer_code := demo_tag_1_transfer_code;
+    } else if (demoTag == 2) {
+      tag_uid := demo_tag_2_uid;
+      tag_transfer_code := demo_tag_2_transfer_code;
+    };
+
+    switch (tagSecrets.get(tag_uid)) {
+      case (?secrets) {
+        tag_count := secrets.ctr;
+      };
+      case _ {
+        return #Err({
+          msg = "Could not generate tag secrets.";
+        });
+      };
+    };
+
+    switch (tagCMACs.get(tag_uid)) {
+      case (?cmacList) {
+        tag_cmac := cmacList[Nat32.toNat(tag_count) + 1];
+      };
+      case _ {
+        return #Err({
+          msg = "Could not generate valid CMAC.";
+        });
+      };
+    };
+
+    #Ok({
+      count = tag_count;
+      transfer_code = tag_transfer_code;
+      cmac = tag_cmac;
+    });
+  };
+
+  public shared({ caller }) func unlockDemoTag(uid : T.TagUid) {
+    assert _isOwner(uid, caller);
+
+    var correct_transfer_code = "00000000000000000000000000000000";
+
+    switch (tagSecrets.get(uid)) {
+      case (?secrets) {
+        correct_transfer_code := secrets.transfer_code;
+      };
+      case _ {};
+    };
+
+    if (uid == demo_tag_1_uid) {
+      demo_tag_1_transfer_code := correct_transfer_code;
+    } else if (uid == demo_tag_2_uid) {
+      demo_tag_2_transfer_code := correct_transfer_code;
+    };
+  };
+
+  public shared({ caller }) func lockDemoTag(uid : T.TagUid) {
+    assert _isOwner(uid, caller);
+
+    var correct_transfer_code = "00000000000000000000000000000000";
+
+    if (uid == demo_tag_1_uid) {
+      demo_tag_1_transfer_code := correct_transfer_code;
+    } else if (uid == demo_tag_2_uid) {
+      demo_tag_2_transfer_code := correct_transfer_code;
+    };
+  };
+
+  //  ----------- Directly called private functions
   private func _getOwnerEntries() : [(T.TagUid, Principal)] {
     Iter.toArray(owners.entries());
   };
@@ -375,8 +456,7 @@ shared actor class SDM() = this {
     return _chatLog(message.location);
   };
 
-////////////
-
+  //  ----------- Additional private functions
   private func _addTagToBalance(p : Principal, uid : T.TagUid) {
     switch (balances.get(p)) {
       case (?v) {
@@ -420,6 +500,23 @@ shared actor class SDM() = this {
     return result.toArray();    
   };
 
+  private func _isLocked(uid : T.TagUid, current_transfer_code : T.AESKey) : Bool {
+
+    switch (tagSecrets.get(uid)) {
+      case (?secrets) {
+        if (current_transfer_code == secrets.transfer_code) {
+          return false;
+        } else {
+          return true;
+        }
+      };
+
+      case _ {
+        return true;
+      };
+    };
+  };
+
   //  ----------- ICP Ledger & Transaction Functions
   private func transferICP(
     uid : T.TagUid, 
@@ -438,7 +535,7 @@ shared actor class SDM() = this {
   };
 
 
-////////////////////////////////////
+  //  ----------- System functions
   system func preupgrade() {
     ownersEntries := Iter.toArray(owners.entries());
     balancesEntries := Iter.toArray(balances.entries());

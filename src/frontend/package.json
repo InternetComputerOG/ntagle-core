@@ -39,6 +39,7 @@
     "crc": "^4.1.0",
     "fontawesome-svelte": "^2.0.1",
     "sirv-cli": "^1.0.0",
+    "svelte-navigator": "^3.2.2",
     "svelte-paginate": "^0.1.0"
   }
 }

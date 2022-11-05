@@ -3,6 +3,8 @@
   import { onMount } from "svelte";
   import { FontAwesomeIcon } from 'fontawesome-svelte';
   import { auth, tag, scanCredentials } from "../store/auth";
+  import Unlock from "./Unlock.svelte";
+  import Lock from "./Lock.svelte";
 
   let walletBalance = 0;
   let withdrawalAddress;
@@ -23,8 +25,10 @@
 
   async function getBalance() {
     pendingBalanceRefresh = true;
+    console.log("Refreshing tag balance.");
     let newBalance = await $auth.actor.tagBalance($scanCredentials.uid);
-    walletBalance = parseInt((Number(newBalance) / 100000000).toFixed(4));
+    walletBalance = parseFloat((Number(newBalance) / 100000000).toFixed(4));
+    console.log("New Balance: " + {walletBalance});
     withdrawalAmount = walletBalance;
     pendingBalanceRefresh = false;
   }
@@ -80,16 +84,22 @@
 <svelte:window on:keyup={capAmount(withdrawalAmount, Number(walletBalance))}/>
 
 <div class="container">
-  <h1>Tag #{$scanCredentials.uid} | 
+  <h1>Tag Info</h1>
+  <h2>#{$scanCredentials.uid} | 
     {#if $tag.locked}
       <span class="locked">LOCKED</span>
     {:else}
       <span class="unlocked">UNLOCKED</span>
     {/if}
-  </h1>
+  </h2>
 
   {#if $tag.owner}
     <h3>You are the owner of this tag.</h3>
+    {#if $tag.locked}
+      <Unlock />
+    {:else}
+      <Lock />
+    {/if}
   {:else}
     <h3>You are not the owner of this tag.</h3>
   {/if}
@@ -177,22 +187,16 @@
     border: 2px solid #fff;
   }
 
+  .tag-wallet {
+    background-color: rgb(27, 27, 27);
+  }
+
   h6 {
     margin-top: 0px;
   }
 
   .hide {
     display: none;
-  }
-
-  .locked {
-    color: rgb(237, 120, 120);
-    font-weight: bold;
-  }
-
-  .unlocked {
-    color: rgb(69, 203, 69);
-    font-weight: bold;
   }
 
   .wallet-address {

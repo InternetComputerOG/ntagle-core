@@ -9,7 +9,7 @@
   let msg = "";
   let compatible_browser = false;
   let inProgress = false;
-  let unlock_url = "https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/tag?m=00000000000000x000000x0000000000000000x" + $tag.transfer_code;
+  let lock_url = "https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/tag?m=00000000000000x000000x0000000000000000x00000000000000000000000000000000";
 
   onMount(async () => {
     inProgress = false;
@@ -31,21 +31,21 @@
     };
   };
 
-  async function unlockTag() {
-    console.log("User clicked unlock button");
+  async function lockTag() {
+    console.log("User clicked lock button");
     inProgress = true;
 
     if (demoTag) {
       msg = "Please wait while we update your virtual tag.";
-      await $auth.actor.unlockDemoTag($scanCredentials.uid);
+      await $auth.actor.lockDemoTag($scanCredentials.uid);
 
-      msg = "Tag Successfully Unlocked.";
+      msg = "Tag Successfully Locked.";
 
       setTimeout(() => {
         tag.update(() => ({
           valid: $tag.valid,
           owner: $tag.owner,
-          locked: false,
+          locked: true,
           transfer_code: $tag.transfer_code,
           wallet: $tag.wallet,
         }));
@@ -57,15 +57,15 @@
       try {
         const ndef = new NDEFReader();
         await ndef.write({
-          records: [{ recordType: "url", data: unlock_url }]
+          records: [{ recordType: "url", data: lock_url }]
         });
-        msg = "Tag Successfully Unlocked.";
+        msg = "Tag Successfully Locked.";
 
         setTimeout(() => {
           tag.update(() => ({
             valid: $tag.valid,
             owner: $tag.owner,
-            locked: false,
+            locked: true,
             transfer_code: $tag.transfer_code,
             wallet: $tag.wallet,
           }));
@@ -84,8 +84,8 @@
 </div>
 {#if compatible_browser}
   {#if !inProgress}
-    <button on:click={async () => await unlockTag()}>🔓 Unlock Tag</button>
+    <button on:click={async () => await lockTag()}>🔒 Lock Tag</button>
   {:else}
-    <div class="loader"></div> Unlocking...
+    <div class="loader"></div> Locking...
   {/if}
 {/if}

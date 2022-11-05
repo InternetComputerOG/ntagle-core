@@ -1,8 +1,29 @@
 export const idlFactory = ({ IDL }) => {
-  const TagParam = IDL.Record({
-    'ctr' : IDL.Vec(IDL.Nat8),
-    'uid' : IDL.Vec(IDL.Nat8),
-    'cmac' : IDL.Vec(IDL.Nat8),
+  const DemoTagData = IDL.Record({
+    'balance' : IDL.Nat64,
+    'owner' : IDL.Principal,
+    'locked' : IDL.Bool,
+  });
+  const DemoTagDataResponse = IDL.Record({
+    'tag1' : DemoTagData,
+    'tag2' : DemoTagData,
+  });
+  const ScanError = IDL.Record({ 'msg' : IDL.Text });
+  const DemoTagDataResult = IDL.Variant({
+    'Ok' : DemoTagDataResponse,
+    'Err' : ScanError,
+  });
+  const CMAC = IDL.Text;
+  const TagCtr = IDL.Nat32;
+  const AESKey = IDL.Text;
+  const DemoTagScanResponse = IDL.Record({
+    'cmac' : CMAC,
+    'count' : TagCtr,
+    'transfer_code' : AESKey,
+  });
+  const DemoTagScanResult = IDL.Variant({
+    'Ok' : DemoTagScanResponse,
+    'Err' : ScanError,
   });
   const TagUid = IDL.Nat64;
   const Location = IDL.Record({
@@ -23,13 +44,10 @@ export const idlFactory = ({ IDL }) => {
     'message' : IDL.Text,
     'location' : IDL.Opt(Location),
   });
-  const AESKey = IDL.Text;
   const TagEncodeResult = IDL.Record({
     'key' : AESKey,
     'transfer_code' : AESKey,
   });
-  const TagCtr = IDL.Nat32;
-  const CMAC = IDL.Text;
   const Scan = IDL.Record({
     'ctr' : TagCtr,
     'uid' : TagUid,
@@ -42,7 +60,6 @@ export const idlFactory = ({ IDL }) => {
     'wallet' : IDL.Vec(IDL.Nat8),
     'transfer_code' : IDL.Opt(AESKey),
   });
-  const ScanError = IDL.Record({ 'msg' : IDL.Text });
   const ScanResult = IDL.Variant({ 'Ok' : ScanResponse, 'Err' : ScanError });
   const BlockIndex = IDL.Nat64;
   const Tokens = IDL.Record({ 'e8s' : IDL.Nat64 });
@@ -58,8 +75,8 @@ export const idlFactory = ({ IDL }) => {
     'Err' : TransferError,
   });
   const SDM = IDL.Service({
-    'decrypt' : IDL.Func([TagParam], [IDL.Vec(IDL.Nat8)], ['query']),
-    'encrypt' : IDL.Func([TagParam], [IDL.Vec(IDL.Nat8)], ['query']),
+    'demoTagData' : IDL.Func([], [DemoTagDataResult], []),
+    'demoTagGenerateScan' : IDL.Func([IDL.Nat], [DemoTagScanResult], []),
     'getChatLog' : IDL.Func(
         [TagUid, IDL.Opt(Location)],
         [IDL.Vec(LoggedMessage)],
@@ -72,14 +89,12 @@ export const idlFactory = ({ IDL }) => {
       ),
     'importScans' : IDL.Func([TagUid, IDL.Vec(Hex)], [], ['oneway']),
     'isAdmin' : IDL.Func([], [IDL.Bool], []),
+    'lockDemoTag' : IDL.Func([TagUid], [], ['oneway']),
     'postMessage' : IDL.Func([NewMessage], [IDL.Vec(LoggedMessage)], []),
-    'reflect' : IDL.Func([TagParam], [TagParam], ['query']),
     'registerTag' : IDL.Func([TagUid], [TagEncodeResult], []),
     'scan' : IDL.Func([Scan], [ScanResult], []),
-    'show_key' : IDL.Func([], [IDL.Vec(IDL.Nat8)], ['query']),
     'tagBalance' : IDL.Func([TagUid], [IDL.Nat64], []),
-    'text_to_array' : IDL.Func([TagParam], [IDL.Vec(IDL.Nat8)], ['query']),
-    'whoami' : IDL.Func([], [IDL.Principal], ['query']),
+    'unlockDemoTag' : IDL.Func([TagUid], [], ['oneway']),
     'withdraw' : IDL.Func(
         [TagUid, IDL.Vec(IDL.Nat8), IDL.Nat64],
         [TransferResult],

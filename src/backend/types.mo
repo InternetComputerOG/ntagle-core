@@ -3,6 +3,7 @@ import Blob         "mo:base/Blob";
 import Float        "mo:base/Float";
 import Nat32        "mo:base/Nat32";
 import Nat64        "mo:base/Nat64";
+import Principal    "mo:base/Principal";
 import Text         "mo:base/Text";
 
 import Hex          "lib/Hex";
@@ -17,12 +18,6 @@ module {
 
   // 16-byte array.
   public type CMAC = Hex.Hex;
-
-  public type TagParam = {
-    uid : Blob;
-    ctr : Blob;
-    cmac : Blob;
-  };
 
   public type Scan = {
     uid: TagUid;
@@ -85,5 +80,32 @@ module {
     balance : Nat64;
     location : Text;
     message : Text;
+  };
+
+  public type DemoTagDataResult = {
+    #Ok : DemoTagDataResponse;
+    #Err : ScanError;
+  };
+
+  public type DemoTagDataResponse = {
+    tag1 : DemoTagData;
+    tag2 : DemoTagData;
+  };
+
+  public type DemoTagData = {
+    locked : Bool;
+    owner : Principal;
+    balance : Nat64;
+  };
+
+  public type DemoTagScanResult = {
+    #Ok : DemoTagScanResponse;
+    #Err : ScanError;
+  };
+
+  public type DemoTagScanResponse = {
+    count : TagCtr;
+    cmac: CMAC;
+    transfer_code : AESKey;
   };
 }
