@@ -21,6 +21,7 @@
 
   onMount(async () => {
     // getPosition();
+    refreshChatLog($scanCredentials.uid, latitude, longitude);
   });
 
   function getPosition() {
