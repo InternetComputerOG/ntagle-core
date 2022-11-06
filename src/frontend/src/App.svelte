@@ -68,7 +68,6 @@
     width: 100%;
     height: 80px;
     display: inline-block;
-    margin-bottom: 64px;
     margin-top: 24px;
   }
 

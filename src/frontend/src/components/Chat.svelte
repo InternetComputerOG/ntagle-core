@@ -6,7 +6,7 @@
   import { auth, tag, scanCredentials } from "../store/auth";
   import { bigIntToUint8Array, toHexString } from "../utils/helpers";
 
-  let msg = "Let us use your location to calculate distances from others in the chat, your exact location will remain anonymous.";
+  let msg = "Let us use your location to calculate your distance from others in the chat. Only the smart contract will know your exact location, your privacy will be respected.";
   let userMsg = "";
   let havePosition = false;
   let incompatibleBrowser = false;
@@ -20,7 +20,7 @@
   //$: paginatedChat = paginate({ chatLog, pageSize, currentPage });
 
   onMount(async () => {
-    getPosition();
+    // getPosition();
   });
 
   function getPosition() {
@@ -43,13 +43,13 @@
   function showError(error) {
     switch(error.code) {
       case error.PERMISSION_DENIED:
-        msg = "User denied the request for Geolocation."
+        msg = "You denied the request for Geolocation. The button below will not work because you've blocked our site from requesting location. Click the lock (🔒) symbol in the address bar of your browser to enable location permission for this site. (This is not required, but without it we cannot calculate your distance from others in the chat. Only the smart contract will know your exact location, your privacy will be respected.)"
         break;
       case error.POSITION_UNAVAILABLE:
-        msg = "Location information is unavailable."
+        msg = "Location information is unavailable for your device."
         break;
       case error.TIMEOUT:
-        msg = "The request to get user location timed out."
+        msg = "The request to get your location timed out."
         break;
       case error.UNKNOWN_ERROR:
         msg = "An unknown error occurred."

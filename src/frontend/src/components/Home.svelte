@@ -150,11 +150,22 @@
 
 </script>
 
-<h1>Home</h1>
+<h1>Welcome</h1>
 <!-- <button on:click={async () => await writeTemplate()}>Write Template</button> -->
+<p>Learn more about this project by 
+  <a href="https://docs.google.com/presentation/d/1KKktLRiNWqD3ZxWF3WZk9kEblMdr2c3gfrUekiXQa5Q/edit?usp=sharing" target="_blank" rel="noopener noreferrer">reviewing our hackathon slide deck</a> 
+  or 
+  <a href="https://twitter.com/ntagled" target="_blank" rel="noopener noreferrer">visiting our Twitter page</a>. 
+  You can also find the code 
+  <a href="https://github.com/InternetComputerOG/ntagle" target="_blank" rel="noopener noreferrer">on GitHub</a> 
+  and 
+  <a href="https://twitter.com/ntagled/status/1589126117524647936?s=20&t=R_T8AwXhOiF04_uieulJGQ" target="_blank" rel="noopener noreferrer">watch a video</a> 
+  of how the process works with physical tags.
+</p>
 
 <h2>Simulated Demo Tags</h2>
-<p>The NTAG424 NFC tags generate a unique url every time you scan them (by bringing a smartphone within 10cm of the tag). The virtual tags below simulate these scans, so you can try the dapp without physical tags.</p>
+<p>The NTAG424 NFC tags generate a unique url every time you scan them (by bringing a smartphone within 10cm of the tag). 
+  The virtual tags below simulate these scans, so you can try the dapp without physical tags.</p>
 
 <button on:click={refreshTagData}>↻ Refresh Tag Data</button>
 
@@ -186,7 +197,7 @@
       {#if errorMsgTag1.length > 0}
         <br><h5>{errorMsgTag1}</h5>
       {:else}
-        <h3>Virtual Scan #{tag1Count} of 500</h3>
+        <h3>Virtual Scan #{tag1Count}</h3>
         <div class="qr_code">
           <QRCode codeValue="{tag1Url}" squareSize=140/>
         </div>
@@ -225,7 +236,7 @@
       {#if errorMsgTag2.length > 0}
         <br><h5>{errorMsgTag2}</h5>
       {:else}
-        <h3>Virtual Scan #{tag2Count} of 500</h3>
+        <h3>Virtual Scan #{tag2Count}</h3>
         <div class="qr_code">
           <QRCode codeValue="{tag2Url}" squareSize=140/>
         </div>
@@ -265,6 +276,10 @@
 
   .container h4, h6 {
     margin: 3px;
+  }
+
+  h1 {
+    margin-top: 60px;
   }
 
 </style>

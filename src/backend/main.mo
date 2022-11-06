@@ -37,8 +37,8 @@ shared actor class SDM() = this {
   private stable var chat_messages : Nat = 0;
   private stable var demo_tag_1_uid : T.TagUid = 1244790287045008;
   private stable var demo_tag_2_uid : T.TagUid = 1207406891700624;
-  private stable var demo_tag_1_transfer_code : Text = "F5F7B4B280C2B9DA90D73746CCC05558";
-  private stable var demo_tag_2_transfer_code : Text = "1959a2a08c2e886e469d95197eb91c14";
+  private stable var demo_tag_1_transfer_code : Text = "00000000000000000000000000000000";
+  private stable var demo_tag_2_transfer_code : Text = "00000000000000000000000000000000";
   let internet_identity_principal_isaac : Principal = Principal.fromText("gvi7s-tbk2k-4qba4-mw6qj-azomr-rrwex-byyqb-icyrn-eygs4-nrmm5-eae");
   var admins : [Principal] = [internet_identity_principal_isaac]; 
 
