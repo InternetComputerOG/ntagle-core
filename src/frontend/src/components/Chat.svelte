@@ -1,8 +1,6 @@
 <script>
-  import { paginate, DarkPaginationNav } from 'svelte-paginate';
   import { AccountIdentifier } from "@dfinity/nns";
   import { onMount } from "svelte";
-  import { FontAwesomeIcon } from 'fontawesome-svelte';
   import { auth, tag, scanCredentials } from "../store/auth";
   import { bigIntToUint8Array, toHexString } from "../utils/helpers";
 

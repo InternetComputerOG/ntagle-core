@@ -1,0 +1,5 @@
+type SDM = 
+ service {
+   whoami: () -> (principal);
+ };
+service : () -> SDM

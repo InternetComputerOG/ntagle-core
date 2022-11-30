@@ -2,7 +2,7 @@ import svelte from "rollup-plugin-svelte";
 import commonjs from "@rollup/plugin-commonjs";
 import resolve from "@rollup/plugin-node-resolve";
 import livereload from "rollup-plugin-livereload";
-import { terser } from "rollup-plugin-terser";
+import terser from "@rollup/plugin-terser";
 import css from "rollup-plugin-css-only";
 import replace from "@rollup/plugin-replace";
 import inject from "@rollup/plugin-inject";
@@ -64,8 +64,8 @@ const { canisterIds, network } = initCanisterIds();
 
 // Fallback to render "undefined" in the browser in case canisters have not been deployed
 const UNDEFINED_CANISTER_IDS = {
-  "process.env.INTERNET_IDENTITY_CANISTER_ID": "undefined",
-  "process.env.BACKEND_CANISTER_ID": "undefined",
+  "process.env.SDM_CANISTER_ID": "undefined",
+  "process.env.RELAY_CANISTER_ID": "undefined",
   "process.env.FRONTEND_CANISTER_ID": "undefined"
 }
 
@@ -102,6 +102,7 @@ export default {
     inlineDynamicImports: true,
     name: "app",
     file: "public/build/bundle.js",
+    intro: 'const global = window;',
   },
   plugins: [
     svelte({

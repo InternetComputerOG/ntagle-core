@@ -1,8 +1,11 @@
 {
-  "backend": {
-    "ic": "gnprj-ayaaa-aaaal-abhaa-cai"
+  "SDM": {
+    "ic": "gq4xa-gqaaa-aaaal-abmta-cai"
   },
   "frontend": {
-    "ic": "gkox5-naaaa-aaaal-abhaq-cai"
+    "ic": "gx5ru-liaaa-aaaal-abmtq-cai"
+  },
+  "relay": {
+    "ic": "h2tv2-eaaaa-aaaal-abmua-cai"
   }
 }

@@ -1,5 +1,6 @@
 <div>
-  <p>Backend canister ID: {process.env.BACKEND_CANISTER_ID}</p>
+  <p>SDM canister ID: {process.env.SDM_CANISTER_ID}</p>
+  <p>Relay canister ID: {process.env.RELAY_CANISTER_ID}</p>
   <p>Frontend canister ID: {process.env.FRONTEND_CANISTER_ID}</p>
 </div>
 

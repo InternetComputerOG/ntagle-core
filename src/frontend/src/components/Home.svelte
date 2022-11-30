@@ -1,7 +1,6 @@
 <script>
   import { onMount } from "svelte";
   import { auth, scanCredentials, createActor, tag } from "../store/auth";
-  import { FontAwesomeIcon } from 'fontawesome-svelte';
   import QRCode from "./QRJS.svelte";
 
   let template_url = "https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/tag?m=00000000000000x000000x0000000000000000x00000000000000000000000000000000";

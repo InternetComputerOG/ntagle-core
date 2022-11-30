@@ -1,0 +1,5 @@
+import type { Principal } from '@dfinity/principal';
+import type { ActorMethod } from '@dfinity/agent';
+
+export interface SDM { 'whoami' : ActorMethod<[], Principal> }
+export interface _SERVICE extends SDM {}
