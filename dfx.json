@@ -1,12 +1,16 @@
 {
   "canisters": {
-    "backend": {
-      "main": "src/backend/main.mo",
+    "SDM": {
+      "main": "src/sdm/main.mo",
+      "type": "motoko"
+    },
+    "relay": {
+      "main": "src/relay/main.mo",
       "type": "motoko"
     },
     "frontend": {
       "dependencies": [
-        "backend"
+        "relay"
       ],
       "frontend": {
         "entrypoint": "src/frontend/public/index.html"
@@ -23,7 +27,7 @@
       "packtool": ""
     }
   },
-  "dfx": "0.11.1",
+  "dfx": "0.12.1",
   "networks": {
     "local": {
       "bind": "127.0.0.1:8000",

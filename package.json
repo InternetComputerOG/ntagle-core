@@ -1,7 +1,7 @@
 {
-  "name": "sdm",
-  "version": "0.1.0",
-  "description": "Secure Dynamic Messaging Canister",
+  "name": "ntagle_core",
+  "version": "1.0.0",
+  "description": "A Secure Dynamic Messaging platform for Secure NFC chips",
   "keywords": [
     "Internet Computer",
     "Motoko",
