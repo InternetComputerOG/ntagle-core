@@ -28,58 +28,46 @@ import T            "types";
 import Helpers      "helpers";
 
 //  Imports from external interfaces
-import LT           "../ledger/ledger";
+
 
 shared actor class SDM() = this {
 
   //  ----------- Variables
   private stable var tag_total : Nat = 0;
-  private stable var chat_messages : Nat = 0;
-  private stable var demo_tag_1_uid : T.TagUid = 1244790287045008;
-  private stable var demo_tag_2_uid : T.TagUid = 1207406891700624;
-  private stable var demo_tag_1_transfer_code : Text = "00000000000000000000000000000000";
-  private stable var demo_tag_2_transfer_code : Text = "00000000000000000000000000000000";
+  private stable var tagIntegration_total : Nat = 0;
   let internet_identity_principal_isaac : Principal = Principal.fromText("gvi7s-tbk2k-4qba4-mw6qj-azomr-rrwex-byyqb-icyrn-eygs4-nrmm5-eae");
   var admins : [Principal] = [internet_identity_principal_isaac]; 
 
   //  ----------- State
-  private stable var ownersEntries : [(T.TagUid, Principal)] = [];
-  private stable var balancesEntries : [(Principal, [T.TagUid])] = [];
-  private stable var tagSecretsEntries : [(T.TagUid, T.TagSecrets)] = [];
-  private stable var tagWalletsEntries : [(T.TagUid, Account.AccountIdentifier)] = [];
-  private stable var tagCMACsEntries : [(T.TagUid, [Hex.Hex])] = [];
-  private stable var chatsEntries : [(Nat, T.ChatMessage)] = [];
+  private stable var tagsEntries : [(T.TagUid, T.Tag)] = [];
+  private stable var integratorsEntries : [(Principal, T.Integrator)] = [];
+  private stable var integrationsEntries : [(T.TagIdentifier, T.Integration)] = [];
 
-  private let owners : TrieMap.TrieMap<T.TagUid, Principal> = TrieMap.fromEntries<T.TagUid, Principal>(ownersEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
-  private let balances : TrieMap.TrieMap<Principal, [T.TagUid]> = TrieMap.fromEntries<Principal, [T.TagUid]>(balancesEntries.vals(), Principal.equal, Principal.hash);
-  private let tagSecrets : TrieMap.TrieMap<T.TagUid, T.TagSecrets> = TrieMap.fromEntries<T.TagUid, T.TagSecrets>(tagSecretsEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
-  private let tagWallets : TrieMap.TrieMap<T.TagUid, Account.AccountIdentifier> = TrieMap.fromEntries<T.TagUid, Account.AccountIdentifier>(tagWalletsEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
-  private let tagCMACs : TrieMap.TrieMap<T.TagUid, [Hex.Hex]> = TrieMap.fromEntries<T.TagUid, [Hex.Hex]>(tagCMACsEntries.vals(), Nat64.equal, func (k : T.TagUid) : Hash.Hash { Hash.hash(Nat64.toNat(k)); });
-  private let chats : TrieMap.TrieMap<Nat, T.ChatMessage> = TrieMap.fromEntries<Nat, T.ChatMessage>(chatsEntries.vals(), Nat.equal, Hash.hash);
+  private let tags : TrieMap.TrieMap<T.TagUid, T.Tag> = TrieMap.fromEntries<T.TagUid, T.Tag>(tagsEntries.vals(), Text.equal, Text.hash);
+  private let integrators : TrieMap.TrieMap<Principal, T.Integrator> = TrieMap.fromEntries<Principal, T.Integrator>(integratorsEntries.vals(), Principal.equal, Principal.hash);
+  private let integrations : TrieMap.TrieMap<T.TagIdentifier, T.Integration> = TrieMap.fromEntries<T.TagIdentifier, T.Integration>(integrationsEntries.vals(), Text.equal, Text.hash);
 
   //  ----------- Configure external actors
-  let Ledger = actor "ryjl3-tyaaa-aaaaa-aaaba-cai" : LT.Self;
-  let icp_fee : Nat64 = 10_000;
+
 
   //  ----------- Public functions
-  public query func getRegistry() : async [(T.TagUid, Principal)] {
-    _getOwnerEntries();
-  };
 
+  //  Encoding
   public shared({ caller }) func registerTag(uid : T.TagUid) : async T.TagEncodeResult {
-    assert(_isAdmin(caller));
+    assert _isAdmin(caller);
+    assert not _tag_exists(uid);
 
     tag_total += 1;
-    await _registerTag(caller, uid);
+    await _registerTag(uid);
   };
 
-  public shared({ caller }) func importScans(
+  public shared({ caller }) func importCMACs(
     uid : T.TagUid, 
     data : [Hex.Hex]
     ) {
       assert(_isAdmin(caller));
 
-      tagCMACs.put(uid, data);
+      _addCMACs(uid, data);
   };
 
   public shared({ caller }) func isAdmin() : async Bool {
@@ -89,176 +77,50 @@ shared actor class SDM() = this {
     return false;
   };
 
-  public shared({ caller }) func scan( scan : T.Scan) : async T.ScanResult {
-      await _scan(caller, scan);
+  //  Scan
+  public shared({ caller }) func scan(scan : T.Scan) : async T.ScanResult {
+    _scan(caller, scan);
   };
 
-  public shared({ caller }) func tagBalance(uid : T.TagUid) : async Nat64 {
-    await _tagBalance(uid);
+  //  Access integration
+  public shared({ caller }) func requestAccess(
+    uid : T.TagUid, 
+    canister : Principal
+    ) : async T.AESKey {
+    assert _isOwner(caller, uid);
+
+    await _generateAccessCode(uid, canister);
   };
 
-  public shared({ caller }) func withdraw(
-      uid : T.TagUid, 
-      account_id : [Nat8], 
-      amount : Nat64
-    ) : async LT.TransferResult {
-      assert(_isOwner(uid, caller));
-
-      await _withdraw(
-        uid, 
-        account_id,
-        amount
-      ); 
+  //  Integrators
+  public shared({ caller }) func registerIntegrator(integrator : T.NewIntegrator) {
+    _addIntegrator(caller, integrator);
   };
 
-  public shared({ caller }) func postMessage(message : T.NewMessage) : async [T.LoggedMessage] {
-    assert _isOwner(message.uid, caller);
-
-    chat_messages += 1;
-    await _postMessage(caller, message);
+  public shared({ caller }) func validateAccess(request : T.ValidationRequest) : async T.ValidationResult {
+    _validateAccess(caller, request);
   };
 
-  public shared({ caller }) func getChatLog(uid : T.TagUid, location: ?T.Location) : async [T.LoggedMessage] {
-    assert _isOwner(uid, caller);
-
-    _chatLog(location);
+  public shared({ caller }) func tagInfo(tagIdentifier : T.TagIdentifier) : async T.TagInfoResult {
+    _getTagInfo(caller, tagIdentifier);
   };
 
-  //  Demo Tag Functions
-  public func demoTagData() : async T.DemoTagDataResult {
-    var tag_1_locked = _isLocked(demo_tag_1_uid, demo_tag_1_transfer_code);
-    var tag_1_owner = internet_identity_principal_isaac;
-    var tag_1_balance = await _tagBalance(demo_tag_1_uid);
+  //  Unlocking
+  public shared({ caller }) func unlock(uid : T.TagUid) : async T.UnlockResult {
+    assert _isOwner(caller, uid);
 
-    var tag_2_locked = _isLocked(demo_tag_2_uid, demo_tag_2_transfer_code);
-    var tag_2_owner = internet_identity_principal_isaac;
-    var tag_2_balance = await _tagBalance(demo_tag_2_uid);
-
-    switch (owners.get(demo_tag_1_uid)) {
-      case (?owner) {
-        tag_1_owner := owner;
-      };
-
-      case _ {
-        return #Err({
-          msg = "Could not find Demo Tag 1 Owner.";
-        }); 
-      };
-    };
-
-    switch (owners.get(demo_tag_2_uid)) {
-      case (?owner) {
-        tag_2_owner := owner;
-      };
-
-      case _ {
-        return #Err({
-          msg = "Could not find Demo Tag 2 Owner.";
-        }); 
-      };
-    };
-
-    let tag_1_data : T.DemoTagData = {
-      locked = tag_1_locked;
-      owner = tag_1_owner;
-      balance = tag_1_balance;
-    };
-
-    let tag_2_data : T.DemoTagData = {
-      locked = tag_2_locked;
-      owner = tag_2_owner;
-      balance = tag_2_balance;
-    };
-
-    #Ok({
-      tag1 = tag_1_data;
-      tag2 = tag_2_data;
-    });
+    await _generateTransferCode(uid, canister);
   };
 
-  public func demoTagGenerateScan(demoTag : Nat) : async T.DemoTagScanResult {
-    var tag_uid = 0 : Nat64;
-    var tag_count = 0 : Nat32;
-    var tag_transfer_code = "0";
-    var tag_cmac = "0";
+  //  Adding New Integration
+  public shared({ caller }) func newIntegration(
+    uid : T.TagUid, 
+    canister : Principal
+    ) : async T.NewIntegrationResult {
 
-    if (demoTag == 1) {
-      tag_uid := demo_tag_1_uid;
-      tag_transfer_code := demo_tag_1_transfer_code;
-    } else if (demoTag == 2) {
-      tag_uid := demo_tag_2_uid;
-      tag_transfer_code := demo_tag_2_transfer_code;
-    };
-
-    switch (tagSecrets.get(tag_uid)) {
-      case (?secrets) {
-        tag_count := secrets.ctr;
-      };
-      case _ {
-        return #Err({
-          msg = "Could not generate tag secrets.";
-        });
-      };
-    };
-
-    switch (tagCMACs.get(tag_uid)) {
-      case (?cmacList) {
-        tag_cmac := cmacList[Nat32.toNat(tag_count) + 1];
-      };
-      case _ {
-        return #Err({
-          msg = "Could not generate valid CMAC.";
-        });
-      };
-    };
-
-    #Ok({
-      count = tag_count;
-      transfer_code = tag_transfer_code;
-      cmac = tag_cmac;
-    });
-  };
-
-  public shared({ caller }) func unlockDemoTag(uid : T.TagUid) {
-    assert _isOwner(uid, caller);
-
-    var correct_transfer_code = "00000000000000000000000000000000";
-
-    switch (tagSecrets.get(uid)) {
-      case (?secrets) {
-        correct_transfer_code := secrets.transfer_code;
-      };
-      case _ {};
-    };
-
-    if (uid == demo_tag_1_uid) {
-      demo_tag_1_transfer_code := correct_transfer_code;
-    } else if (uid == demo_tag_2_uid) {
-      demo_tag_2_transfer_code := correct_transfer_code;
-    };
-  };
-
-  public shared({ caller }) func lockDemoTag(uid : T.TagUid) {
-    assert _isOwner(uid, caller);
-
-    var correct_transfer_code = "00000000000000000000000000000000";
-
-    if (uid == demo_tag_1_uid) {
-      demo_tag_1_transfer_code := correct_transfer_code;
-    } else if (uid == demo_tag_2_uid) {
-      demo_tag_2_transfer_code := correct_transfer_code;
-    };
   };
 
   //  ----------- Directly called private functions
-  private func _getOwnerEntries() : [(T.TagUid, Principal)] {
-    Iter.toArray(owners.entries());
-  };
-
-  private func _isAdmin (p: Principal) : Bool {
-    return(Helpers.contains<Principal>(admins, p, Principal.equal))
-  };
-
   private func _registerTag(owner : Principal, uid : T.TagUid) : async T.TagEncodeResult {
     assert not _tag_exists(uid);
 
@@ -282,7 +144,7 @@ shared actor class SDM() = this {
     return result;
   };
 
-  private func _scan(p : Principal, scan : T.Scan) : async T.ScanResult {
+  private func _scan(p : Principal, scan : T.Scan) : T.ScanResult {
       switch (tagSecrets.get(scan.uid)) {
         case (?secrets) {
 
@@ -389,22 +251,17 @@ shared actor class SDM() = this {
         };
       };
   };
+  
+  //  ----------- Additions to state functions
 
-  private func _tagBalance(uid : T.TagUid) : async Nat64 {
 
-    switch (tagWallets.get(uid)) {
-      case (?wallet) {
-        let icpBalance = await Ledger.account_balance({
-          account = Blob.toArray(wallet);
-        });
+  //  ----------- Boolean functions
+  private func _tag_exists(uid : T.TagUid) : Bool {
+    return Option.isSome(owners.get(uid));
+  };
 
-        return icpBalance.e8s;
-      };
-
-      case _ {
-        return 0 : Nat64;
-      }
-    };
+  private func _isAdmin (p: Principal) : Bool {
+    return(Helpers.contains<Principal>(admins, p, Principal.equal))
   };
 
   private func _isOwner(uid : T.TagUid, p : Principal) : Bool {
@@ -418,86 +275,6 @@ shared actor class SDM() = this {
         return false;
       };
     };
-  };
-
-  private func _withdraw(
-    uid : T.TagUid,
-    account_id : [Nat8],
-    amount : Nat64
-    ) : async LT.TransferResult {
-      var icp_amount = 0 :Nat64;
-
-      if (amount == 0) {
-        icp_amount := await _tagBalance(uid);
-      } else {
-        icp_amount := amount;
-      };
-
-      //  Transfer that amount back to user
-      await transferICP(
-        uid, 
-        account_id, 
-        icp_amount
-      );
-  };
-
-  private func _postMessage(caller : Principal, message : T.NewMessage) : async [T.LoggedMessage] {
-    let new_message : T.ChatMessage = {
-      from = caller;
-      uid = message.uid;
-      time = Nat64.fromNat(Int.abs(Time.now()));
-      balance = await _tagBalance(message.uid);
-      location = message.location;
-      message = message.message;
-    };
-
-    chats.put(chat_messages, new_message);
-
-    return _chatLog(message.location);
-  };
-
-  //  ----------- Additional private functions
-  private func _addTagToBalance(p : Principal, uid : T.TagUid) {
-    switch (balances.get(p)) {
-      case (?v) {
-        balances.put(p, Array.append(v,[uid]));
-      };
-      case null {
-        balances.put(p, [uid]);
-      }
-    }
-  };
-
-  private func _removeTagFromBalance(p : Principal, uid : T.TagUid) {
-    switch (balances.get(p)) {
-      case (?v) {
-        balances.put(p, Array.filter<Nat64>(v, func (e : T.TagUid) : Bool { e != uid; }));
-      };
-      case null {
-        balances.put(p, [uid]);
-      }
-    }
-  };
-
-  private func _tag_exists(uid : T.TagUid) : Bool {
-    return Option.isSome(owners.get(uid));
-  };
-
-  private func _chatLog(location : ?T.Location) : [T.LoggedMessage] {
-    let result = Buffer.Buffer<T.LoggedMessage>(chat_messages);
-
-    for (message in chats.vals()) {
-      result.add({
-        from = message.from;
-        uid = message.uid;
-        time = message.time;
-        balance = message.balance;
-        location = Helpers.distance(location, message.location);
-        message = message.message
-      });
-    };
-
-    return result.toArray();    
   };
 
   private func _isLocked(uid : T.TagUid, current_transfer_code : T.AESKey) : Bool {
@@ -517,40 +294,16 @@ shared actor class SDM() = this {
     };
   };
 
-  //  ----------- ICP Ledger & Transaction Functions
-  private func transferICP(
-    uid : T.TagUid, 
-    transferTo : [Nat8], 
-    transferAmount : Nat64
-    ) : async LT.TransferResult {
-      let res =  await Ledger.transfer({
-        memo: Nat64 = uid;
-        from_subaccount = ?Blob.toArray(Helpers.uidToSubaccount(uid));
-        to = transferTo;
-        //  The amount of ICP, minus the necessary transaction fee
-        amount = { e8s = transferAmount - icp_fee };
-        fee = { e8s = icp_fee };
-        created_at_time = ?{ timestamp_nanos = Nat64.fromNat(Int.abs(Time.now())) };
-      });
-  };
-
-
   //  ----------- System functions
   system func preupgrade() {
-    ownersEntries := Iter.toArray(owners.entries());
-    balancesEntries := Iter.toArray(balances.entries());
-    tagSecretsEntries := Iter.toArray(tagSecrets.entries());
-    tagWalletsEntries := Iter.toArray(tagWallets.entries());
-    tagCMACsEntries := Iter.toArray(tagCMACs.entries());
-    chatsEntries := Iter.toArray(chats.entries());
+    tagsEntries := Iter.toArray(tags.entries());
+    integratorsEntries := Iter.toArray(integrators.entries());
+    tagIntegrationsEntries := Iter.toArray(tagIntegrations.entries());
   };
 
   system func postupgrade() {
-    ownersEntries := [];
-    balancesEntries := [];
-    tagSecretsEntries := [];
-    tagWalletsEntries := [];
-    tagCMACsEntries := [];
-    chatsEntries := [];
+    tagsEntries := [];
+    integratorsEntries := [];
+    tagIntegrationsEntries := [];
   };
 };
