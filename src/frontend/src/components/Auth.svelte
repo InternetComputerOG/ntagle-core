@@ -9,10 +9,10 @@
   let url = window.location.href;
 
   if (url.length < 121) {
-    window.location.href = "https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/";
+    console.log("Something's wrong, URL too short.");
   };
 
-  let uid = parseInt(url.slice(50,64), 16);
+  let uid = url.slice(50,64);
   let ctr = parseInt(url.slice(65,71), 16);
   let cmac = url.slice(72,88);
   let transferCode = url.slice(89,121);
@@ -56,6 +56,7 @@
   };
 
   async function validateScan() {
+    console.log("Starting to validate scan...");
     let scan_param = {
       uid: uid,
       ctr: ctr,
@@ -64,24 +65,23 @@
     };
 
     let result = await $auth.actor.scan(scan_param);
+    console.log(result);
     if ( result.hasOwnProperty("Ok") ) {
       tag.update(() => ({
         valid: true,
         owner: result.Ok.owner,
+        owner_changed: result.Ok.owner_changed,
         locked: result.Ok.locked,
-        transfer_code: result.Ok.transfer_code,
-        wallet: accountIdentifierFromBytes(result.Ok.wallet)
+        integrations: result.Ok.integrations,
+        scans_left: result.Ok.scans_left,
+        years_left: result.Ok.years_left
       }));
       message = "Scan validated!";
       setTimeout(() => {
         message = "";
-      }, 5000)
+      }, 50000)
     } else if ( result.hasOwnProperty("Err") ) {
       message = result.Err.msg;
-
-      setTimeout(() => {
-        window.location.href = "https://gkox5-naaaa-aaaal-abhaq-cai.ic0.app/";
-      }, 3000)
     } else {
       message = "Something went wrong, your scan could not be validated."
     };
@@ -125,9 +125,11 @@
     tag.update(() => ({
       valid: false,
       owner: false,
+      owner_changed: false,
       locked: true,
-      transfer_code: null,
-      wallet: null
+      integrations: [],
+      scans_left: 0,
+      years_left: 0
     }));
 
     message = "You've successfully logged out.";

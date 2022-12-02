@@ -10,7 +10,7 @@
     },
     "frontend": {
       "dependencies": [
-        "relay"
+        "SDM"
       ],
       "frontend": {
         "entrypoint": "src/frontend/public/index.html"
@@ -25,7 +25,8 @@
     "build": {
       "args": "",
       "packtool": ""
-    }
+    },
+    "bindings": ["js", "ts", "did", "mo"]
   },
   "dfx": "0.12.1",
   "networks": {

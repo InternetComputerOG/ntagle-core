@@ -1,31 +1,45 @@
 // Version: 1.0.0
 type AESKey = Hex;
-type AccountIdentifier__1 = Blob;
-type ChatMessage =
-  {
-    balance : Nat64;
-    from : Principal;
-    location : ?Location;
-    message : Text;
-    time : Nat64;
-    uid : TagUid
-  };
 type Hex = Text;
-type Location = {latitude : Float; longitude : Float};
+type Integration =
+  {
+    canister : Principal;
+    hashed_access_code : Hex;
+    last_access_key_change : Time;
+    uid : TagUid;
+    user : ?Principal
+  };
+type Integrator =
+  {
+    description : Text;
+    image : Text;
+    name : Text;
+    tags : [TagIdentifier];
+    url : Text
+  };
+type Tag =
+  {
+    active_integrations : [TagIdentifier];
+    cmacs : [Hex];
+    creation_date : Time;
+    ctr : TagCtr;
+    hashed_transfer_code : ?Hex;
+    index : TagIndex;
+    last_ownership_change : Time;
+    owner : Principal;
+    salt : AESKey
+  };
 type TagCtr = Nat32;
-type TagSecrets = {ctr : TagCtr; key : AESKey; transfer_code : AESKey};
-type TagUid = Nat64;
+type TagIdentifier = Hex;
+type TagIndex = Nat32;
+type TagUid = Hex;
+type Time = Int;
+type ValidationIdentifier = Hex;
 actor {
-  stable var balancesEntries : [(Principal, [TagUid])];
-  stable var chat_messages : Nat;
-  stable var chatsEntries : [(Nat, ChatMessage)];
-  stable var demo_tag_1_transfer_code : Text;
-  stable var demo_tag_1_uid : Nat64;
-  stable var demo_tag_2_transfer_code : Text;
-  stable var demo_tag_2_uid : Nat64;
-  stable var ownersEntries : [(TagUid, Principal)];
-  stable var tagCMACsEntries : [(TagUid, [Hex])];
-  stable var tagSecretsEntries : [(TagUid, TagSecrets)];
-  stable var tagWalletsEntries : [(TagUid, AccountIdentifier__1)];
-  stable var tag_total : Nat
+  stable var integrationsEntries : [(TagIdentifier, Integration)];
+  stable var integratorsEntries : [(Principal, Integrator)];
+  stable var tagIntegration_total : Nat;
+  stable var tag_total : Nat32;
+  stable var tagsEntries : [(TagUid, Tag)];
+  stable var validationsEntries : [(ValidationIdentifier, TagIdentifier)]
 };

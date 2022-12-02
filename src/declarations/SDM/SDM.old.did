@@ -1,18 +1,59 @@
-type TransferResult = 
+type ValidationResult = 
  variant {
-   Err: TransferError;
-   Ok: BlockIndex;
+   Err: ValidationError;
+   Ok: ValidationResponse;
  };
-type TransferError = 
+type ValidationResponse = 
+ record {
+   current_user: principal;
+   last_access_key_change: Time;
+   last_ownership_change: Time;
+   previous_user: opt principal;
+   tag: TagIdentifier;
+ };
+type ValidationRequest = 
+ record {
+   access_code: AESKey;
+   user: principal;
+   validation: ValidationIdentifier;
+ };
+type ValidationIdentifier = text;
+type ValidationError = 
  variant {
-   BadFee: record {expected_fee: Tokens;};
-   InsufficientFunds: record {balance: Tokens;};
-   TxCreatedInFuture;
-   TxDuplicate: record {duplicate_of: BlockIndex;};
-   TxTooOld: record {allowed_window_nanos: nat64;};
+   Expired;
+   IntegrationNotFound;
+   Invalid;
+   NotAuthorized;
+   TagNotFound;
+   ValidationNotFound;
  };
-type Tokens = record {e8s: nat64;};
-type TagUid = nat64;
+type UnlockResult = 
+ variant {
+   Err: UnlockError;
+   Ok: UnlockResponse;
+ };
+type UnlockResponse = record {transfer_code: AESKey;};
+type UnlockError = variant {TagNotFound;};
+type Time = int;
+type TagUid = text;
+type TagInfoResult = 
+ variant {
+   Err: TagInfoError;
+   Ok: TagInfoResponse;
+ };
+type TagInfoResponse = 
+ record {
+   current_user: opt principal;
+   last_access_key_change: Time;
+   last_ownership_change: Time;
+ };
+type TagInfoError = 
+ variant {
+   IntegrationNotFound;
+   NotAuthorized;
+   TagNotFound;
+ };
+type TagIdentifier = text;
 type TagEncodeResult = 
  record {
    key: AESKey;
@@ -26,12 +67,19 @@ type ScanResult =
  };
 type ScanResponse = 
  record {
+   integrations: vec IntegrationResult;
    locked: bool;
    owner: bool;
-   transfer_code: opt AESKey;
-   wallet: blob;
+   owner_changed: bool;
+   scans_left: nat32;
+   years_left: nat;
  };
-type ScanError = record {msg: text;};
+type ScanError = 
+ variant {
+   ExpiredCount;
+   InvalidCMAC;
+   TagNotFound;
+ };
 type Scan = 
  record {
    cmac: CMAC;
@@ -39,72 +87,98 @@ type Scan =
    transfer_code: AESKey;
    uid: TagUid;
  };
-type NewMessage = 
+type NewIntegrator = 
  record {
-   location: opt Location;
-   message: text;
+   description: text;
+   image: text;
+   name: text;
+   url: text;
+ };
+type NewIntegrationResult = 
+ variant {
+   Err: NewIntegrationError;
+   Ok: NewIntegrationResponse;
+ };
+type NewIntegrationResponse = 
+ record {
+   access_code: AESKey;
+   canister: principal;
+   description: text;
+   image: text;
+   name: text;
+   url: text;
+   validation: ValidationIdentifier;
+ };
+type NewIntegrationRequest = 
+ record {
+   canister: principal;
    uid: TagUid;
  };
-type LoggedMessage = 
- record {
-   balance: nat64;
-   from: principal;
-   location: text;
-   message: text;
-   time: nat64;
-   uid: TagUid;
+type NewIntegrationError = 
+ variant {
+   IntegrationAlreadyExists;
+   IntegratorNotFound;
+   NotCanisterPrincipal;
+   TagNotFound;
  };
-type Location = 
+type Integrator = 
  record {
-   latitude: float64;
-   longitude: float64;
+   description: text;
+   image: text;
+   name: text;
+   tags: vec TagIdentifier;
+   url: text;
+ };
+type IntegrationResult = 
+ record {
+   canister: principal;
+   description: text;
+   image: text;
+   integrated: bool;
+   name: text;
+   url: text;
+ };
+type ImportCMACResult = 
+ variant {
+   Err;
+   Ok;
  };
 type Hex = text;
-type DemoTagScanResult = 
- variant {
-   Err: ScanError;
-   Ok: DemoTagScanResponse;
- };
-type DemoTagScanResponse = 
- record {
-   cmac: CMAC;
-   count: TagCtr;
-   transfer_code: AESKey;
- };
-type DemoTagDataResult = 
- variant {
-   Err: ScanError;
-   Ok: DemoTagDataResponse;
- };
-type DemoTagDataResponse = 
- record {
-   tag1: DemoTagData;
-   tag2: DemoTagData;
- };
-type DemoTagData = 
- record {
-   balance: nat64;
-   locked: bool;
-   owner: principal;
- };
 type CMAC = text;
-type BlockIndex = nat64;
+type AccessResult = 
+ variant {
+   Err: AccessError;
+   Ok: AccessResponse;
+ };
+type AccessResponse = 
+ record {
+   access_code: AESKey;
+   validation: ValidationIdentifier;
+ };
+type AccessRequest = 
+ record {
+   canister: principal;
+   uid: TagUid;
+ };
+type AccessError = 
+ variant {
+   IntegrationNotFound;
+   SaltNotFound;
+ };
 type AESKey = text;
 service : {
-  demoTagData: () -> (DemoTagDataResult);
-  demoTagGenerateScan: (nat) -> (DemoTagScanResult);
-  getChatLog: (TagUid, opt Location) -> (vec LoggedMessage);
-  getRegistry: () -> (vec record {
-                            TagUid;
-                            principal;
-                          }) query;
-  importScans: (TagUid, vec Hex) -> () oneway;
+  importCMACs: (TagUid, vec Hex) -> (ImportCMACResult);
+  integratorRegistry: () -> (vec record {
+                                   principal;
+                                   Integrator;
+                                 });
   isAdmin: () -> (bool);
-  lockDemoTag: (TagUid) -> () oneway;
-  postMessage: (NewMessage) -> (vec LoggedMessage);
+  newIntegration: (NewIntegrationRequest) -> (NewIntegrationResult);
+  registerIntegrator: (NewIntegrator) -> () oneway;
   registerTag: (TagUid) -> (TagEncodeResult);
+  requestAccess: (AccessRequest) -> (AccessResult);
   scan: (Scan) -> (ScanResult);
-  tagBalance: (TagUid) -> (nat64);
-  unlockDemoTag: (TagUid) -> () oneway;
-  withdraw: (TagUid, vec nat8, nat64) -> (TransferResult);
+  tagInfo: (TagIdentifier) -> (TagInfoResult);
+  unlock: (TagUid) -> (UnlockResult);
+  validateAccess: (ValidationRequest) -> (ValidationResult);
 }

@@ -10,6 +10,41 @@ import Time         "mo:base/Time";
 import Hex          "lib/Hex";
 
 module {
+  
+  //  ----------- State
+  //  Tag
+  public type Tag = {
+    index : TagIndex;
+    ctr : TagCtr;
+    cmacs : [Hex.Hex];
+    owner : Principal;
+    hashed_transfer_code : ?Hex.Hex;
+    salt : AESKey;
+    active_integrations : [TagIdentifier];
+    last_ownership_change : Time.Time;
+    creation_date : Time.Time;
+  };
+
+  //  Integrators
+  public type Integrator = {
+    name : Text;
+    image : Text;
+    description : Text;
+    url : Text;
+    tags : [TagIdentifier];
+  };
+
+  //  Integrations 
+  public type Integration = {
+    canister : Principal;
+    uid : TagUid;
+    hashed_access_code : Hex.Hex;
+    user : ?Principal;
+    last_access_key_change : Time.Time;
+  };
+
+  
+  //  Redefinitions
   public type TagIndex = Nat32;
   public type TagCtr = Nat32;
 
@@ -20,11 +55,15 @@ module {
   public type TagIdentifier = Hex.Hex;
 
   //  32-byte array as Hex string.
+  public type ValidationIdentifier = Hex.Hex;
+
+  //  32-byte array as Hex string.
   public type AESKey = Hex.Hex;
 
   //  16-byte array as Hex string.
   public type CMAC = Hex.Hex;
 
+  //  ----------- Functions
   //  Scanning
   public type Scan = {
     uid : TagUid;
@@ -40,16 +79,17 @@ module {
 
   public type ScanResponse = {
     owner : Bool;
-    new_owner : Bool;
+    owner_changed : Bool;  //  If the user became the new owner after this scan.
     locked : Bool;
-    active_integrations : [IntegrationResult];
-    available_integrations : [IntegrationResult];
+    integrations : [IntegrationResult];
     scans_left : Nat32;
-    years_left : Nat8;
+    years_left : Nat;
   };
 
   public type ScanError = {
-    msg : Text;
+    #TagNotFound;  //  Tag UID not found.
+    #InvalidCMAC;
+    #ExpiredCount;  //  The scan count was lower than the last valid scan logged by the canister.
   };
 
   //  Encoding
@@ -58,53 +98,45 @@ module {
     transfer_code: AESKey;
   };
 
-  //  Tag
-  public type Tag = {
-    index : TagIndex;
-    ctr : TagCtr;
-    cmacs : [Hex.Hex];
-    owner : Principal;
-    transfer_code : AESKey;
-    actove_integrations : [TagIdentifier];
-    last_ownership_change : Time.Time;
-    creation_date : Time.Time;
+  public type ImportCMACResult = {
+    #Ok;
+    #Err;
   };
 
-  //  Integrations
-  public type IntegrationResult = {
-    name : Text;
-    image : Text;
-    description : Text;
+  //  Access
+  public type AccessRequest = {
+    uid : TagUid;
     canister : Principal;
-    url : Text;
   };
-  
-  public type Integration = {
-    canister : Principal;
+
+  public type AccessResult = {
+    #Ok : AccessResponse;
+    #Err : AccessError;
+  };
+
+  public type AccessResponse = {
+    validation : ValidationIdentifier;
     access_code : AESKey;
-    user : Principal;
-    last_access_key_change : Time.Time;
   };
 
-  public type Integrator = {
-    name : Text;
-    image : Text;
-    description : Text;
-    url : Text;
-    tags : [TagIdentifier];
+  public type AccessError = {
+    #SaltNotFound;  //  Salt not found.
+    #IntegrationNotFound;  //  Tag Identifier not found in Integration list.
   };
 
+  //  Integrators
   public type NewIntegrator = {
     name : Text;
     image : Text;
     description : Text;
     url : Text;
   };
-
+  
   //  Validation
   public type ValidationRequest = {
     user : Principal;
     access_code : AESKey;
+    validation : ValidationIdentifier;
   };
 
   public type ValidationResult = {
@@ -114,33 +146,37 @@ module {
 
   public type ValidationResponse = {
     tag : TagIdentifier;
-    grant_access : Bool;
+    current_user : Principal;
     previous_user : ?Principal;  //  It will only be null if this is a new tag integration.
-    last_ownership_change : Time.Time;
+    last_ownership_change : Time.Time;  //  Last time the tag changed owners.
     last_access_key_change : Time.Time;
   };
 
   public type ValidationError = {
-    #NotAuthorized;  //  Caller not found in Integrator list. 
-    #Invalid;  //  The Access Code was not found.
+    #ValidationNotFound;
+    #IntegrationNotFound;
+    #NotAuthorized;  //  Caller canister not authorized. 
+    #TagNotFound;
+    #Invalid;  //  The Access Code was not valid.
     #Expired; //  The Access Code was more than 10 minutes old.
   };
 
   //  Tag Info
   public type TagInfoResult = {
     #Ok : TagInfoResponse;
-    #Err : ValidationError;
+    #Err : TagInfoError;
   };
 
   public type TagInfoResponse = {
-    current_user : Principal;
+    current_user : ?Principal;
     last_ownership_change : Time.Time;
     last_access_key_change : Time.Time;
   };
 
   public type TagInfoError = {
-    #NotAuthorized;  //  Caller not found in Integrator list. 
-    #NotFound;  //  Tag Identifier not found in Integration list. 
+    #IntegrationNotFound;
+    #NotAuthorized;  //  Caller canister not authorized. 
+    #TagNotFound;  //  Tag Identifier not found in Integration list. 
   };
 
   //  Unlocking
@@ -154,20 +190,43 @@ module {
   };
 
   public type UnlockError = {
-    #NotAuthorized;  //  Caller not owner of this tag. 
-    #NotFound;  //  Tag not found. 
+    #TagNotFound;  //  Tag UID not found. 
   };
 
-  //  Unlocking
+  //  Integration
+  public type IntegrationResult = {
+    integrated : Bool;
+    name : Text;
+    image : Text;
+    description : Text;
+    canister : Principal;
+    url : Text;
+  };
+
+  public type NewIntegrationRequest = {
+    uid : TagUid;
+    canister : Principal;
+  };
+
   public type NewIntegrationResult = {
     #Ok : NewIntegrationResponse;
     #Err : NewIntegrationError;
   };
 
-  public type NewIntegrationResponse = IntegrationResult;
+  public type NewIntegrationResponse = {
+    name : Text;
+    image : Text;
+    description : Text;
+    canister : Principal;
+    url : Text;
+    validation : ValidationIdentifier;
+    access_code : AESKey;
+  };
 
   public type NewIntegrationError = {
-    #NotAuthorized;  //  Caller not owner of this tag. 
-    #NotFound;  //  Tag not found. 
+    #NotCanisterPrincipal;
+    #IntegratorNotFound;
+    #IntegrationAlreadyExists;
+    #TagNotFound;  //  Tag Identifier not found. 
   };
 }

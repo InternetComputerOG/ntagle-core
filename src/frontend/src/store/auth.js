@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import { idlFactory } from "../../../declarations/relay/relay.did.js";
+import { idlFactory } from "../../../declarations/SDM/SDM.did.js";
 import { Actor, HttpAgent } from "@dfinity/agent";
 
 /**
@@ -12,7 +12,7 @@ export function createActor(options) {
   const hostOptions = {
     host:
       process.env.DFX_NETWORK === "ic"
-        ? `https://${process.env.RELAY_CANISTER_ID}.ic0.app`
+        ? `https://${process.env.SDM_CANISTER_ID}.ic0.app`
         : "http://localhost:8000",
   };
   if (!options) {
@@ -40,7 +40,7 @@ export function createActor(options) {
   // Creates an actor with using the candid interface and the HttpAgent
   return Actor.createActor(idlFactory, {
     agent,
-    canisterId: process.env.RELAY_CANISTER_ID,
+    canisterId: process.env.SDM_CANISTER_ID,
     ...options?.actorOptions,
   });
 }
@@ -53,7 +53,7 @@ export const auth = writable({
 export const adminStatus = writable(false);
 
 export const scanCredentials = writable({
-  uid: 0,
+  uid: "",
   ctr: 0,
   cmac: "",
   transfer_code: ""
@@ -62,7 +62,9 @@ export const scanCredentials = writable({
 export const tag = writable({
   valid: false,
   owner: false,
+  owner_changed: false,
   locked: true,
-  transfer_code: null,
-  wallet: null
+  integrations: [],
+  scans_left: 0,
+  years_left: 0
 });
