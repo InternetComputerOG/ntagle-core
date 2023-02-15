@@ -5,14 +5,14 @@
 # What is ntagle?
 ntagle (a combination of the word "tag" and the concept of "entangled particles" in physics) is a decentralized application which gives developers the ability to integrate web3 assets and experiences into inexpensive, secure, and durable NFC chips which are compatible with any modern smartphone.
 
-This is made possible using the unique properties of [The Internet Computer Protocol](https://internetcomputer.org/, [NTAG 424 DNA chips from NXP](https://www.nxp.com/products/rfid-nfc/nfc-hf/ntag-for-tags-labels/ntag-424-dna-424-dna-tagtamper-advanced-security-and-privacy-for-trusted-iot-applications:NTAG424DNA#:~:text=The%20NTAG%20424%20DNA%20is,with%20crypto%2Dsecure%20access%20permissions.), and [WebNFC](https://w3c.github.io/web-nfc/).
+This is made possible using the unique properties of [The Internet Computer Protocol](https://internetcomputer.org/), [NTAG 424 DNA chips from NXP](https://www.nxp.com/products/rfid-nfc/nfc-hf/ntag-for-tags-labels/ntag-424-dna-424-dna-tagtamper-advanced-security-and-privacy-for-trusted-iot-applications:NTAG424DNA#:~:text=The%20NTAG%20424%20DNA%20is,with%20crypto%2Dsecure%20access%20permissions.), and [WebNFC](https://w3c.github.io/web-nfc/).
 
-Learn more about this project by [reviewing our hackathon slide deck](https://docs.google.com/presentation/d/1KKktLRiNWqD3ZxWF3WZk9kEblMdr2c3gfrUekiXQa5Q/edit?usp=sharing) or [visiting our Twitter page](https://twitter.com/ntagled). You can also find the code [on GitHub](https://github.com/InternetComputerOG/ntagle) and [watch a video](https://twitter.com/ntagled/status/1589126117524647936?s=20&t=R_T8AwXhOiF04_uieulJGQ) of how the process works with physical NFC tags.
+Learn more about this project by [reviewing our hackathon slide deck](https://docs.google.com/presentation/d/1KKktLRiNWqD3ZxWF3WZk9kEblMdr2c3gfrUekiXQa5Q/edit?usp=sharing) or [visiting our Twitter page](https://twitter.com/ntagled). You can also [watch a video](https://twitter.com/ntagled/status/1589126117524647936?s=20&t=R_T8AwXhOiF04_uieulJGQ) of how the process works with physical NFC tags.
 
 # What's the status of this project?
-The ntagle team bagan work in October 2022 with a $25k grant from the [DFINITY Foundation](https://dfinity.org/). During this grant they developed a proof-of-concept, alpha tags, a demo dapp, a functional conference handout product, and a working dapp which can integrate with 3rd party projects.
+The ntagle team began work in October 2022 with a $25k grant from the [DFINITY Foundation](https://dfinity.org/) which completed in February 2023. During this grant they developed a proof-of-concept, alpha tags, a demo dapp, a functional conference handout product, and a working dapp which can integrate with 3rd party projects.
 
-In addition, the project has gone through security consultation from both DFINITY and the public ICP developers community, and come out with positive geedback.
+In addition, the project has gone through security consultation from both DFINITY and the public ICP developers community, and come out with strong positive feedback.
 
 **The next steps include:**
 - Executing a sale to distribute tags to more people.
@@ -20,7 +20,7 @@ In addition, the project has gone through security consultation from both DFINIT
 - Executing a decentralization sale via the SNS.
 
 # How to integrate:
-**WARNING: This integration method is for testing, education, and experimentation only. It will be improved in the future with updates that are NOT BACKWARD COMPATIBLE, so __do not build anything production__ using this integration method.
+### **WARNING:** This integration method is for testing, education, and experimentation only. It will be improved in the future with updates that are NOT BACKWARD COMPATIBLE, so *do not build anything production* using this integration method.
 Here is an [integrator example](https://github.com/InternetComputerOG/ntagle-integrator) repo which can be used for reference, showing how the process below is implemented.
 
 ## Step 1: Initialize the Integration
@@ -60,9 +60,9 @@ public shared({ caller }) func initializeNtagle() {
 
 ## Step 2: Validating scans
 When a user visits your website to use a ntagle integration, there will be a **Tag Identifier** an **Access Code** added to the URL with this format:
-- https://**[YOUR URL]**/tag?m=**[TAG IDENTIFIER]**x**[ACCESS KEY]**
+- https:// **[YOUR URL]** /tag?m= **[TAG IDENTIFIER]** x **[ACCESS KEY]**
 
-The **Tag Identifier** is unique to both the tag and your canister, so it cannot be used to track a tag across multiple dapps. The **Access Code** is unique to a particulaer scan of that tag, and if it proves valid you can know that the website vistor who provided this credential (and whatever Principal they logged in with) *must have physically scanned the identified tag within the past **10 minutes,** * and you use that information within the logic of your canister however you desire.
+The **Tag Identifier** is unique to both the tag and your canister, so it cannot be used to track a tag across multiple dapps. The **Access Code** is unique to a particulaer scan of that tag, and if it proves valid you can know that the website vistor who provided this credential (and whatever Principal they logged in with) must have physically scanned the identified tag within the past **10 minutes**, and you use that information within the logic of your canister however you desire.
 
 To validate a scan, your canister needs to call the **validateAccess** function on the ntagle SDM canister:
 ```
@@ -103,7 +103,7 @@ public type ValidationError = {
 };
 ```
 
-This could be done by creating a **validate Access** function within your our canister like this:
+This could be done by creating a **validateAccess** function within your own canister like this:
 ```
 public shared({ caller }) func validateAccess(request : T.ValidationRequest) : async T.ValidationResult {
   let full_request : NT.ValidationRequest = {
