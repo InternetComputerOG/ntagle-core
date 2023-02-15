@@ -11,7 +11,7 @@
   import { accountIdentifierFromBytes, principalToAccountDefaultIdentifier } from "../utils/helpers";
 
   let uid = "00000000000000";
-  var key = "38513c477c59cf1e9181b4a9bb139413";
+  var key = "000000000000000000000000000000000";
   let transferCode = "nothing yet";
   let CMACs = "";
   let ctr = "000000";
@@ -20080,7 +20080,7 @@
     console.log(rawUid);
     let result = await $auth.actor.registerTag(rawUid);
     console.log(result);
-    // key = result.key;
+    key = result.key;
     transferCode = result.transfer_code;
     console.log("Completed Register Tag...");
   };
