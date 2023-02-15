@@ -154,6 +154,7 @@ export const idlFactory = ({ IDL }) => {
     'requestAccess' : IDL.Func([AccessRequest], [AccessResult], []),
     'scan' : IDL.Func([Scan], [ScanResult], []),
     'tagInfo' : IDL.Func([TagIdentifier], [TagInfoResult], []),
+    'testHash' : IDL.Func([IDL.Text], [Hex], []),
     'unlock' : IDL.Func([TagUid], [UnlockResult], []),
     'validateAccess' : IDL.Func([ValidationRequest], [ValidationResult], []),
   });

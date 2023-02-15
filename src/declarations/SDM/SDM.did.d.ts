@@ -65,6 +65,7 @@ export interface SDM {
   'requestAccess' : ActorMethod<[AccessRequest], AccessResult>,
   'scan' : ActorMethod<[Scan], ScanResult>,
   'tagInfo' : ActorMethod<[TagIdentifier], TagInfoResult>,
+  'testHash' : ActorMethod<[string], Hex>,
   'unlock' : ActorMethod<[TagUid], UnlockResult>,
   'validateAccess' : ActorMethod<[ValidationRequest], ValidationResult>,
 }

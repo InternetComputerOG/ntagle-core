@@ -32,11 +32,15 @@
     "@dfinity/principal": "^0.14.1",
     "@dfinity/utils": "^0.0.5",
     "@stablelib/aes": "^1.0.1",
+    "@stablelib/base64": "^1.0.1",
     "@stablelib/cmac": "^1.0.1",
     "@stablelib/hex": "^1.0.1",
+    "@stablelib/sha256": "^1.0.1",
+    "@stablelib/utf8": "^1.0.1",
     "crc": "^4.1.1",
     "sirv-cli": "^2.0.2",
     "svelte-navigator": "^3.2.2",
-    "tweetnacl": "^1.0.3"
+    "tweetnacl": "^1.0.3",
+    "utf8": "^3.0.0"
   }
 }

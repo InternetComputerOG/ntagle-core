@@ -42,9 +42,9 @@
 
 </script>
 
-<div class="container">
+<div class="tag-container">
   <h1>Tag Info</h1>
-  <h2>#{$scanCredentials.uid} | 
+  <h2 class="tag-uid">#{$scanCredentials.uid} | 
     {#if $tag.locked}
       <span class="locked">LOCKED</span>
     {:else}
@@ -64,44 +64,96 @@
   {/if}
 </div>
 
-<div class="container">
-  <h2>Integrated Dapps</h2>
+
+<h2>Integrated Dapps</h2>
+<div class="indented">
   {#each $tag.integrations as integration}
     {#if (integration.integrated)}
-      <div>
-        <img src={integration.image} alt={integration.name} />
-      </div>
-      <h3>{integration.name}</h3>
-      <h6>{integration.canister}</h6>
-      <p>{integration.description}</p>
-      <a href={integration.url} target="_blank" rel="noreferrer"><h4>Visit Website</h4></a>
-      <button on:click={useIntegration(integration.canister, integration.url)}>Use Integration</button>
+      <div class="container">
+        <div class="img-container">
+          <img src={integration.image} alt={integration.name} />
+        </div>
+        <h1>{integration.name}</h1>
+        <h6>Canister ID: {integration.canister}</h6>
+        <h4>Description</h4>
+        <p>{integration.description}</p>
+        <a href={integration.url} target="_blank" rel="noreferrer"><h4>Visit Website</h4></a>
+        <button on:click={useIntegration(integration.canister, integration.url)}>Use Integration</button>
+      </div> 
     {/if}
   {/each}
   <h1>{message}</h1>
 </div>
 
-<div class="container">
-  <h2>Available Dapps</h2>
+
+<h2>Available Dapps</h2>
+<div class="indented">
   {#each $tag.integrations as integration}
     {#if (!integration.integrated)}
-      <div>
-        <img src={integration.image} alt={integration.name} />
+      <div class="container">
+        <div class="img-container">
+          <img src={integration.image} alt={integration.name} />
+        </div>
+        <h3>{integration.name}</h3>
+        <h6>Canister ID: {integration.canister}</h6>
+        <h4>Description</h4>
+        <p>{integration.description}</p>
+        <a href={integration.url} target="_blank" rel="noreferrer"><h4>Visit Website</h4></a>
+        <button on:click={addIntegration(integration.canister)}>Add Integration</button>
       </div>
-      <h3>{integration.name}</h3>
-      <h6>{integration.canister}</h6>
-      <p>{integration.description}</p>
-      <a href={integration.url} target="_blank" rel="noreferrer"><h4>Visit Website</h4></a>
-      <button on:click={addIntegration(integration.canister)}>Add Integration</button>
     {/if}
   {/each}
 </div>
+
+
 
 <style>
   .container {
     margin: 30px 0;
     padding: 15px;
     border: 1px solid white;
+    text-align: left;
+    border-radius: 10px;
+  }
+
+  h1 {
+    margin-bottom: 0px;
+  }
+
+  
+
+  h2 {
+    margin-top: 80px;
+  }
+
+  .tag-uid {
+    margin-top: 0px;
+  }
+
+  .tag-container {
+    margin: 30px 0;
+    padding: 15px;
+    border: 4px solid white;
+    text-align: left;
+    border-radius: 20px;
+  }
+
+  button {
+    margin-left: 0px;
+  }
+
+  .img-container {
+    padding: 20px;
+    background-color: white;
+    border-radius: 15px;
+    display: inline-block;
+  }
+
+  img {
+    object-fit: contain;
+    height: 60px;
+    display: inline-block;
+    margin: 0px;
   }
 
   h6 {

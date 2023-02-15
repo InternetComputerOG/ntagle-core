@@ -58,8 +58,7 @@ shared actor class SDM() = this {
 
   //  Encoding
   public shared({ caller }) func registerTag(uid : T.TagUid) : async T.TagEncodeResult {
-    //////////////////////////////////////////// Update when done
-    // assert _isAdmin(caller);
+    assert _isAdmin(caller);
     assert not _tag_exists(uid);
 
     await _registerTag(caller, uid);
@@ -69,10 +68,13 @@ shared actor class SDM() = this {
     uid : T.TagUid, 
     data : [Hex.Hex]
     ) : async T.ImportCMACResult {
-      //////////////////////////////////////////// Update when done
-      // assert _isAdmin(caller);
+      assert _isAdmin(caller);
 
       _addCMACs(uid, data);
+  };
+
+  public shared func testHash(s : Text) : async Hex.Hex {
+    return Helpers.hashSecret(s);
   };
 
   public shared({ caller }) func isAdmin() : async Bool {
@@ -206,7 +208,7 @@ shared actor class SDM() = this {
           var new_owner_principal = tag.owner;  //  The new value for the Principal "owner" value for this tag.
           var new_owner_bool = false;  //  The new value for the Boolean "owner" value for the response.
           var new_owner_changed = false;
-          var new_transfer_code = tag.hashed_transfer_code;
+          var new_transfer_code = Option.get(tag.hashed_transfer_code, "");
           var new_last_ownership_change = tag.last_ownership_change;
           var new_locked = true;
 
@@ -226,11 +228,10 @@ shared actor class SDM() = this {
           };
 
           //  Check Transfer Code
-          if (tag.hashed_transfer_code != null) {
-            //////////////////////////////////////////// Update one doing SHA256 on front end
-            let new_transfer_code_hash = /*?Helpers.hashSecret(scan.transfer_code)*/ scan.transfer_code; 
+          if (new_transfer_code != "") {
+            let new_transfer_code_hash = Helpers.hashSecret(scan.transfer_code); 
 
-            if (tag.hashed_transfer_code == new_transfer_code_hash) {
+            if (new_transfer_code == new_transfer_code_hash) {
 
               //  Handle current owner scanning an unlocked tag
               if (tag.owner == caller) {
@@ -239,7 +240,7 @@ shared actor class SDM() = this {
               //  Handle new owner claiming ownership
               } else {
                 new_owner_principal := caller;
-                new_transfer_code := null;
+                new_transfer_code := "";
                 new_last_ownership_change := Time.now();
                 new_owner_bool := true;
                 new_owner_changed := true;
@@ -253,7 +254,7 @@ shared actor class SDM() = this {
             ctr = scan.ctr;  //  Update count to the most recent scan.
             cmacs = tag.cmacs;
             owner = new_owner_principal;  //  Update owner.
-            hashed_transfer_code = new_transfer_code;  //  Update transfer code
+            hashed_transfer_code = ?new_transfer_code;  //  Update transfer code
             salt = tag.salt;
             active_integrations = tag.active_integrations;
             last_ownership_change = new_last_ownership_change;  //  Update last ownership change
@@ -468,35 +469,35 @@ shared actor class SDM() = this {
     uid : T.TagUid
     ) : async T.UnlockResult {
     
-    switch (tags.get(uid)) {
-      case (?tag) {
-        let new_transfer_code = await Helpers.generateKey();
+      switch (tags.get(uid)) {
+        case (?tag) {
+          let new_transfer_code = await Helpers.generateKey();
 
-        let new_tag = {
-          index = tag.index;
-          ctr = tag.ctr;
-          cmacs = tag.cmacs;
-          owner = tag.owner;
-          hashed_transfer_code = ?Helpers.hashSecret(new_transfer_code);
-          salt = tag.salt;
-          active_integrations = tag.active_integrations;
-          last_ownership_change = tag.last_ownership_change;
-          creation_date = tag.creation_date;
+          let new_tag = {
+            index = tag.index;
+            ctr = tag.ctr;
+            cmacs = tag.cmacs;
+            owner = tag.owner;
+            hashed_transfer_code = ?Helpers.hashSecret(new_transfer_code);
+            salt = tag.salt;
+            active_integrations = tag.active_integrations;
+            last_ownership_change = tag.last_ownership_change;
+            creation_date = tag.creation_date;
+          };
+
+          tags.put(uid, new_tag);
+
+          let result = {
+            transfer_code = new_transfer_code;
+          }; 
+
+          return #Ok(result);
         };
 
-        tags.put(uid, new_tag);
-
-        let result = {
-          transfer_code = new_transfer_code;
-        }; 
-
-        return #Ok(result);
+        case _ {
+          #Err(#TagNotFound);
+        };
       };
-
-      case _ {
-        #Err(#TagNotFound);
-      };
-    };
   };
 
   //  Adding New Integration
@@ -591,33 +592,37 @@ shared actor class SDM() = this {
   };
 
   //  Get Integration Results
-  private func _getIntegrationResults(uid : T.TagUid, salt : T.AESKey, tagIdentifiers : [T.TagIdentifier]) : [T.IntegrationResult] {
-    let result = Buffer.Buffer<T.IntegrationResult>(integrators.size());
-    for ((canister, integrator) in integrators.entries()) {
-      let tag_identifier = Helpers.getTagIdentifier(uid, canister, salt);
-      var new_integrated = false;
+  private func _getIntegrationResults(
+    uid : T.TagUid, 
+    salt : T.AESKey, 
+    tagIdentifiers : [T.TagIdentifier]
+    ) : [T.IntegrationResult] {
+      let result = Buffer.Buffer<T.IntegrationResult>(integrators.size());
+      for ((canister, integrator) in integrators.entries()) {
+        let tag_identifier = Helpers.getTagIdentifier(uid, canister, salt);
+        var new_integrated = false;
 
-      switch (Array.find(tagIdentifiers, func (t : Text) : Bool {t == tag_identifier})) {
-        case (?value) {
-          new_integrated := true;
+        switch (Array.find(tagIdentifiers, func (t : Text) : Bool {t == tag_identifier})) {
+          case (?value) {
+            new_integrated := true;
+          };
+
+          case _ {};
         };
 
-        case _ {};
+        let integration_result = {
+          integrated = new_integrated;
+          name = integrator.name;
+          image = integrator.image;
+          description = integrator.description;
+          canister = canister;
+          url = integrator.url;
+        };
+
+        result.add(integration_result);
       };
 
-      let integration_result = {
-        integrated = new_integrated;
-        name = integrator.name;
-        image = integrator.image;
-        description = integrator.description;
-        canister = canister;
-        url = integrator.url;
-      };
-
-      result.add(integration_result);
-    };
-
-    return Buffer.toArray(result);
+      return Buffer.toArray(result);
   };
 
   //  ----------- Boolean helper functions
@@ -629,17 +634,20 @@ shared actor class SDM() = this {
     return Helpers.isCanisterPrincipal(caller);
   };
 
-  private func _isOwner(caller : Principal, uid : T.TagUid) : Bool {
+  private func _isOwner(
+    caller : Principal, 
+    uid : T.TagUid
+    ) : Bool {
 
-    switch (tags.get(uid)) {
-      case (?tag) {
-        return tag.owner == caller;
-      };
+      switch (tags.get(uid)) {
+        case (?tag) {
+          return tag.owner == caller;
+        };
 
-      case _ {
-        return false;
+        case _ {
+          return false;
+        };
       };
-    };
   };
 
   private func _isIntegrator(caller : Principal) : Bool {

@@ -179,6 +179,7 @@ service : {
   requestAccess: (AccessRequest) -> (AccessResult);
   scan: (Scan) -> (ScanResult);
   tagInfo: (TagIdentifier) -> (TagInfoResult);
+  testHash: (text) -> (Hex);
   unlock: (TagUid) -> (UnlockResult);
   validateAccess: (ValidationRequest) -> (ValidationResult);
 }

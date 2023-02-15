@@ -31,7 +31,7 @@
     </Route>
   {#if $adminStatus}
     <Admin />
-    <CMAC />
+    <!-- <CMAC /> -->
   {/if}
   </main>
 </Router>

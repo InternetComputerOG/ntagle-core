@@ -81,7 +81,7 @@
         message = "";
       }, 50000)
     } else if ( result.hasOwnProperty("Err") ) {
-      message = result.Err.msg;
+      message = "Scan not valid. Please try scanning your card again." // result.Err.msg;
     } else {
       message = "Something went wrong, your scan could not be validated."
     };
@@ -91,6 +91,7 @@
   async function isAdmin() {
     if ( await $auth.actor.isAdmin() ) {
       adminStatus.update(() => (true));
+      console.log("Hello Admin!");
     };
   };
 
